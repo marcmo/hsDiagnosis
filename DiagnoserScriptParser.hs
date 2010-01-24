@@ -25,6 +25,7 @@ loopstart = string "LOOPSTART" *> (many (noneOf "\n")) *> return []
 loopend = string "LOOPEND" *> (many (noneOf "\n")) *> return []
 p_comment = spaces *> (string "//") *> (many (noneOf "\n"))  *> return []
 
+-- DIAG [WRITE_BLOCK_AND_READ_AGAIN_PLAIN] SEND [bf,10,01,0] EXPECT [FF,10,01] TIMEOUT [2000] SOURCE [F4] TARGET [40]
 p_testCase :: CharParser () [TestCase]
 p_testCase = do
   name <- spaces *> string "DIAG" *> spaces *> char '[' *> many1 (oneOf baseChars) <* char ']'
@@ -39,7 +40,6 @@ p_hexRow :: String -> CharParser () [Word8]
 p_hexRow label = do
   xs <- spaces *> string label *> spaces *> char '[' *> ((many1 hexDigit) `sepBy` (char ',')) <* char ']'
   return $ map string2hex xs
-	-- DIAG [WRITE_BLOCK_AND_READ_AGAIN_PLAIN] SEND [bf,10,01,0] EXPECT [FF,10,01] TIMEOUT [2000] SOURCE [F4] TARGET [40]
   
 process :: [TestCase] -> String
 process tc = show tc 

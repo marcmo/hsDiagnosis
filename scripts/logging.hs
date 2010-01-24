@@ -4,6 +4,8 @@ import Data.Maybe(isJust,fromJust)
 import Util
 import Timer
 
+conf = femConfigA
+
 data LoggingInstruction = DISABLEALL
                         | ENABLEALL
                         | SETLEVEL
@@ -41,18 +43,19 @@ data LogLevel = NOLOGGING
               | CRITICAL
                    deriving (Eq, Ord, Show, Read, Enum)
 
-sourceAddr = string2hex source
-targetAddr = string2hex target
+sourceAddr = string2hex $ source conf
+targetAddr = string2hex $ target conf
 
-getVin = sendData [0x22,0xF1,0x90]
+getVin = sendData conf [0x22,0xF1,0x90]
 
-setLevel comp level = sendData [0xbf,0x12,0x04,toWord SETLEVEL,toWord comp,toWord level]
+setLevel :: Component -> LogLevel -> IO (Maybe DiagnosisMessage)
+setLevel comp level = sendData conf [0xbf,0x12,0x04,toWord SETLEVEL,toWord comp,toWord level]
 
-disable = sendData [0xbf,0x12,0x04,toWord DISABLEALL] >> return ()
+disable = sendData conf [0xbf,0x12,0x04,toWord DISABLEALL] >> return ()
 
-enable = sendData [0xbf,0x12,0x04,toWord ENABLEALL] >> return ()
+enable = sendData conf [0xbf,0x12,0x04,toWord ENABLEALL, toWord DEBUG] >> return ()
 
-showMapping = sendData [0xbf,0x12,0x04,0x03] >>=
+showMapping = sendData conf [0xbf,0x12,0x04,toWord DISPLAYSETTINGS] >>=
                 maybe (print "no valid response")
                   (putStrLn . unlines . interpreteMapping . diagPayload)
 
@@ -64,4 +67,5 @@ interpreteMapping bs =
       display (pos,lev) = showComponent pos ++ " -> " ++ showLevel lev in
     map display mapping
 
+toWord :: (Enum a) => a -> Word8
 toWord = int2Word8 . fromEnum

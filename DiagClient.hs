@@ -5,14 +5,14 @@ module DiagClient
       sendDiagMsg,
       sendData,
       string2hex,
-      Word8
+      Word8,
+      DiagConfig(..)
     )    
 where
 
 import DiagMessage
 import Network.Socket
 import System.IO
-import DiagnosticConfig
 import Control.Concurrent
 import Control.Monad
 import HSFZMessage
@@ -30,32 +30,38 @@ receiveBufSize = 4096
 pollingMs = 100
 
 data DiagConnection = DiagConnection { diagHandle :: Handle }
+data DiagConfig = MkDiagConfig {
+  host :: String,
+  port :: String,
+  source :: String,
+  target :: String
+} deriving (Show)
  
 type Net = ReaderT DiagConnection IO
 -- TODO: use ByteString
-sendData ::  [Word8] -> IO (Maybe DiagnosisMessage)
-sendData = sendDiagMsg . DiagnosisMessage (string2hex source) (string2hex target)
+sendData ::  DiagConfig -> [Word8] -> IO (Maybe DiagnosisMessage)
+sendData c = (sendDiagMsg c) . DiagnosisMessage (string2hex $ source c) (string2hex $ target c)
 
-sendDataTo :: [Word8] -> Word8 -> Word8 -> IO (Maybe DiagnosisMessage)
-sendDataTo xs src target = (sendDiagMsg . DiagnosisMessage src target) xs
+sendDataTo :: DiagConfig -> [Word8] -> Word8 -> Word8 -> IO (Maybe DiagnosisMessage)
+sendDataTo c xs src target = (sendDiagMsg c . DiagnosisMessage src target) xs
 
-sendMessage :: HSFZMessage -> IO (Maybe HSFZMessage)
-sendMessage msg = bracket (diagConnect) disconnect loop
+sendMessage :: DiagConfig -> HSFZMessage -> IO (Maybe HSFZMessage)
+sendMessage c msg = bracket (diagConnect c) disconnect loop
   where
     disconnect = hClose . diagHandle
     loop st    = catch (runReaderT (run msg) st) (\(IOException _) -> return (Nothing))
 
-sendBytes :: [Word8] -> IO (Maybe HSFZMessage)
-sendBytes = sendMessage . dataMessage
-sendDiagMsg :: DiagnosisMessage -> IO (Maybe DiagnosisMessage)
-sendDiagMsg dm = do
+sendBytes :: DiagConfig -> [Word8] -> IO (Maybe HSFZMessage)
+sendBytes c = (sendMessage c) . dataMessage
+sendDiagMsg :: DiagConfig -> DiagnosisMessage -> IO (Maybe DiagnosisMessage)
+sendDiagMsg c dm = do
     let hsfzMsg = diag2hsfz dm DataBit
-    hsfzResp <- sendMessage hsfzMsg
+    hsfzResp <- sendMessage c hsfzMsg
     return $ maybe Nothing (Just . hsfz2diag) hsfzResp
  
-diagConnect :: IO DiagConnection
-diagConnect = notify $ do
-    addrinfos <- getAddrInfo Nothing (Just host) (Just port)
+diagConnect :: DiagConfig -> IO DiagConnection
+diagConnect c = notify $ do
+    addrinfos <- getAddrInfo Nothing (Just $ host c) (Just $ port c)
     let serveraddr = head addrinfos
     sock <- socket (addrFamily serveraddr) Stream defaultProtocol
     setSocketOption sock KeepAlive 1
@@ -64,9 +70,9 @@ diagConnect = notify $ do
     hSetBuffering h NoBuffering
     return (DiagConnection h)
   where
-    notify = bracket_ (return ()) (return ())
-        -- (printf "Connecting to %s ... " host >> hFlush stdout)
-        -- (putStrLn "done.")
+    notify = bracket_ -- (return ()) (return ())
+        (printf "Connecting to %s ... " (host c) >> hFlush stdout)
+        (putStrLn "done.")
 
 -- We're in the Net monad now, so we've connected successfully
 -- connected to a socket
