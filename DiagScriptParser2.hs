@@ -6,6 +6,9 @@ import Text.ParserCombinators.Parsec.Language
 import ParserUtil
 import Control.Monad
 import Data.Word(Word8)
+import DiagClient
+
+conf = MkDiagConfig "10.40.39.33" "6801" "f5" "40"
 
 data ScriptElement = ScriptTestCase TestCase
                    | Loop String Int [ScriptElement]
@@ -33,7 +36,8 @@ runDiagScript (DiagScript es) = do
 
 runTest :: TestCase -> IO ()
 runTest (TestCase n msg exp time s t) =
-  print $ n ++ "[" ++ show msg ++ "]"
+  sendData conf msg >> return ()
+  -- print $ n ++ "[" ++ show msg ++ "]"
 
 lexer :: P.TokenParser ()
 lexer = P.makeTokenParser $ haskellStyle
