@@ -1,14 +1,16 @@
+module DiagScriptParser
+
+where 
+
 import Text.ParserCombinators.Parsec.Expr
 import qualified Text.ParserCombinators.Parsec.Token as P
 import Data.Char
 import Util
 import Text.ParserCombinators.Parsec.Language
 import ParserUtil
+import DiagMessage
 import Control.Monad
 import Data.Word(Word8)
-import DiagClient
-
-conf = MkDiagConfig "10.40.39.33" "6801" "f5" "40"
 
 data ScriptElement = ScriptTestCase TestCase
                    | Loop String Int [ScriptElement]
@@ -19,25 +21,16 @@ data DiagScript = DiagScript {
 } deriving (Show)
 data TestCase = TestCase {
   caseName :: String,
-  sendMsg  :: [Word8],
-  expected :: [Word8],
+  sendMsg  :: DiagnosisMessage,
+  expected :: DiagnosisMessage,
   timeout  :: Int,
   source   :: Word8,
   target   :: Word8
 } deriving (Show)
+mkTestCase n m e time s t = TestCase n sendM exp time s t
+  where sendM = DiagnosisMessage s t m
+        exp = DiagnosisMessage t s e
 
-runDiagScript :: DiagScript -> IO ()
-runDiagScript (DiagScript []) = return ()
-runDiagScript (DiagScript es) = do
-    mapM_ runElem es
-      where runElem (ScriptTestCase t) = runTest t
-            runElem (Loop n m xs) = replicateM_ m (mapM runElem xs)
-            runElem (Group n xs) = mapM_ runElem xs
-
-runTest :: TestCase -> IO ()
-runTest (TestCase n msg exp time s t) =
-  sendData conf msg >> return ()
-  -- print $ n ++ "[" ++ show msg ++ "]"
 
 lexer :: P.TokenParser ()
 lexer = P.makeTokenParser $ haskellStyle
@@ -88,12 +81,12 @@ scriptelem = do reserved "LOOPSTART"
                 
 testcase :: Parser TestCase
 testcase =
-   TestCase <$> (reserved "DIAG" *> nameInBrackets)
-            <*> (reserved "SEND" *> hexList)
-            <*> (reserved "EXPECT" *> hexList)
-            <*> (reserved "TIMEOUT" *> read `fmap` brackets (many1 digit))
-            <*> (reserved "SOURCE" *> brackets hexNum)
-            <*> (reserved "TARGET" *> brackets hexNum)
+   mkTestCase <$> (reserved "DIAG" *> nameInBrackets)
+              <*> (reserved "SEND" *> hexList)
+              <*> (reserved "EXPECT" *> hexList)
+              <*> (reserved "TIMEOUT" *> read `fmap` brackets (many1 digit))
+              <*> (reserved "SOURCE" *> brackets hexNum)
+              <*> (reserved "TARGET" *> brackets hexNum)
 
 hexList ::  CharParser () [Word8]
 hexList = brackets $ (sepBy hexNum (symbol ","))
@@ -117,18 +110,10 @@ runLex p input
                return x
           ) input
 
-main = do 
+main2 = do 
   contents <- getContents
   runLex diagscript contents
 
 parseScript ::  String -> Either ParseError DiagScript
 parseScript = parse diagscript "(unknown)"
 
-test ::  FilePath -> IO (Maybe DiagScript)
-test f = do
-  inpStr <- readFile f
-  case parseScript inpStr of 
-    Left err -> do  putStrLn "Error parsing input:"
-                    print err
-                    return Nothing
-    Right r -> return $ Just r

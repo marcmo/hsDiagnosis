@@ -12,7 +12,7 @@ import Data.Bits
 import Data.List(intersperse,intercalate)
 
 headerLen = 6
-diagTimeout = 500 :: Int -- ms
+diagTimeout = 5000 :: Int -- ms
 
 data DiagnosisMessage = DiagnosisMessage {
   diagSource :: Word8,
@@ -23,11 +23,12 @@ instance Show DiagnosisMessage where
   show (DiagnosisMessage s t xs)  = '[':(showAsHex s) ++ "][" ++ (showAsHex t) ++ "]"
       ++ (showAsHexString xs)
 
-int2Word8 x = fromIntegral x :: Word8
-word8ToInt x = fromIntegral x :: Int
-
 diagMsg2bytes ::  DiagnosisMessage -> [Word8]
 diagMsg2bytes m = (diagSource m):(diagTarget m):(diagPayload m)
+
+matchPayload :: DiagnosisMessage -> [Word8] -> Bool
+matchPayload (DiagnosisMessage _ _ p) exp =
+  length p >= length exp && (take (length exp) p) == exp
 
 diag2hsfz :: DiagnosisMessage -> ControlBit -> HSFZMessage
 diag2hsfz dm cb = HSFZMessage cb (length payload) payload
@@ -41,12 +42,6 @@ msg2ByteString :: HSFZMessage -> String
 msg2ByteString (HSFZMessage bit len payload) =
   map chr $ encodeLength len ++ [0,control2Int bit] ++ (map word8ToInt payload)
 
-encodeLength len =
-            [0xFF .&. (len `shiftR` 24)
-            ,0xFF .&. (len `shiftR` 16)
-            ,0xFF .&. (len `shiftR` 8)
-            ,0xFF .&. (len `shiftR` 0)]
-   
 bytes2msg :: String -> Maybe HSFZMessage
 bytes2msg s =
   nothingIf (length s < headerLen) >>
