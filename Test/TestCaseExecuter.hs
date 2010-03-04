@@ -1,13 +1,14 @@
-module TestCaseExecuter
+module Test.TestCaseExecuter
 
 where
 
-import DiagnosisTestCase
+import Test.DiagnosisTestCase
+import DiagnosticConfig
 import Util
 import Data.Word
 import Control.Monad
 import Data.Maybe
-import DiagClient
+import Com.DiagClient
 
 type ErrorDesc = String
 
@@ -30,7 +31,7 @@ expect xs (Just msg) =
 
 runTestCase ::  TestCase -> IO (Maybe ErrorDesc)
 runTestCase (TestCase name msg expected timeout) =
-  sendData (diagPayload msg) >>= expect expected 
+  sendData conf (diagPayload msg) >>= expect expected 
 
 runTestRun :: TestRun -> IO TestResult
 runTestRun (SingleLevel ts) = do

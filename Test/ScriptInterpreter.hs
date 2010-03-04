@@ -1,10 +1,10 @@
-module ScriptInterpreter
+module Test.ScriptInterpreter
 
 where
 
-import DiagnoserScriptParser
-import TestCaseExecuter
-import DiagnosisTestCase
+import Test.DiagnoserScriptParser
+import Test.TestCaseExecuter
+import Test.DiagnosisTestCase
 import Control.Monad
 
 data UserAction = UA {

@@ -1,4 +1,4 @@
-module DiagScriptParser
+module Test.DiagScriptParser
 
 where 
 
@@ -8,7 +8,7 @@ import Data.Char
 import Util
 import Text.ParserCombinators.Parsec.Language
 import ParserUtil
-import DiagMessage
+import Com.DiagMessage
 import Control.Monad
 import Data.Word(Word8)
 

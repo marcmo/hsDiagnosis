@@ -2,11 +2,11 @@ module DiagnosticConfig
 
 where
 
-import DiagClient
+import Com.DiagClient
 
-debug_on = True
+debug_on = False
 
-conf = femConfig ip_C
+conf = femConfig ip_A
 zgwConf = zgwConfig ip_A
 
 ip_A = "10.40.39.26"
@@ -23,6 +23,6 @@ zgwConfig = mkConf zgw
 msgTunnelConf = mkConf messageTunnel msgTunnelIp
 
 mkConf :: String -> String -> DiagConfig
-mkConf target ip = MkDiagConfig ip "6801" "f4" target debug_on
+mkConf target ip = MkDiagConfig ip 6801 "f4" target debug_on
 
 

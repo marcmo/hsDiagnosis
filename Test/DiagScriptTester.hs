@@ -1,17 +1,23 @@
-module DiagScriptTester where
+module Test.DiagScriptTester where
 
-import DiagScriptParser
+import Test.DiagScriptParser
 import DiagnosticConfig
 import Control.Monad
 import Maybe(fromJust)
-import DiagClient
-import System(getArgs)
+import Com.DiagClient
+import Control.Concurrent (threadDelay)
+import System (getArgs)
 import qualified Test.Framework as TF -- (defaultMainWithOpts, testGroup, Test)
 import Test.Framework.Providers.HUnit
 import qualified Test.HUnit as HUnit
 
-main = do 
-  (f:_) <- getArgs
+-- run with: runhaskell DiagScriptTester.hs "Script/nvramtest.skr"
+-- main = do 
+--   (f:_) <- getArgs
+--   runTestScript f
+
+runTestScript ::  FilePath -> IO ()
+runTestScript f = do
   diagScript <- readFile f
   case parseScript diagScript of 
     Left err -> do  putStrLn "Error parsing diagScript:"
@@ -25,7 +31,7 @@ extractTests ::  DiagScript -> [TF.Test]
 extractTests (DiagScript s) = map extractTest s
 
 extractTest :: ScriptElement -> TF.Test
-extractTest (ScriptTestCase t) = testCase (caseName t) (test2case t)
+extractTest (ScriptTestCase t) = testCase (caseName t) ((test2case t) >> threadDelay 50000 >> return ())
 extractTest (Group n xs) = TF.testGroup n (map extractTest xs)
 extractTest (Loop n cnt xs) =
   TF.testGroup ("Loop " ++ n ++ " (" ++ show cnt ++ ")") $
@@ -37,24 +43,3 @@ test2case (TestCase n msg exp time s t) = do
   maybe (return ()) (\m->
     HUnit.assertEqual n exp m) resp
 
-
-runDiagScript :: DiagScript -> IO ()
-runDiagScript (DiagScript []) = return ()
-runDiagScript (DiagScript es) = do
-    mapM_ runElem es
-      where runElem (ScriptTestCase t) = runTest t
-            runElem (Loop n m xs) = replicateM_ m (mapM runElem xs)
-            runElem (Group n xs) = mapM_ runElem xs
-
-runTest :: TestCase -> IO ()
-runTest (TestCase n msg exp time s t) =
-  sendData conf (diagPayload msg) >> return ()
-
-test ::  FilePath -> IO (Maybe DiagScript)
-test f = do
-  inpStr <- readFile f
-  case parseScript inpStr of 
-    Left err -> do  putStrLn "Error parsing input:"
-                    print err
-                    return Nothing
-    Right r -> return $ Just r

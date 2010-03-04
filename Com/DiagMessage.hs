@@ -1,4 +1,4 @@
-module DiagMessage
+module Com.DiagMessage
 
 where
 
@@ -7,7 +7,7 @@ import Numeric(showHex,readHex)
 import Data.Char(chr,ord)
 import Data.Word(Word8)
 import Util
-import HSFZMessage
+import Com.HSFZMessage
 import Data.Bits
 import Data.List(intersperse,intercalate)
 

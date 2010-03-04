@@ -19,6 +19,6 @@ Library
     Util
   GHC-options:
 Executable diagnosis
-  Build-Depends:      haskell98,cmdargs
+  Build-Depends:      haskell98,cmdargs,bytestring,pcre-light,FileManipCompat,hxt
   Main-Is:            Main.hs
   ghc-options:        -O2 -main-is main

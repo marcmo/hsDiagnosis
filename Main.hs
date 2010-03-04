@@ -2,56 +2,50 @@
 module Main where
 
 import System.Console.CmdArgs
-import DiagClient
+import Com.DiagClient(sendData)
+import DiagnosticConfig
+import Control.Monad (when)
 import Network.Socket
 import Script.ErrorMemory
 import Script.LoggingFramework
+import Test.DiagScriptTester
 
-data Sample = Diagsend {message :: [Int]}
-            | ReadDtc { dtcKind :: Int }
-            | Logging { option :: Int }
-              deriving (Show, Data, Typeable)
+data DiagTool = Diagsend { message :: [Int]}
+              | ReadDtc { dtcKind :: Int }
+              | Logging { enableLogging :: Bool, showLogging :: Bool }
+              | DiagTest { script :: String }
+                deriving (Show, Data, Typeable)
 
-diagSend ::  Mode Sample
-diagSend = mode $ Diagsend {message = def &= typ "number of processors"}
-dtc ::  Mode Sample
+diagSend = mode $ Diagsend {message = def &= text "diagnostic message to be sent"}
 dtc = mode $ ReadDtc { dtcKind = 1} &= text "read DTCs in ecu (primary = 1, secondary = 2)"
-logging :: Mode Sample
-logging = mode $ Logging { option = 1}
+logging = mode $ Logging { enableLogging = def &= text "enable logging",
+                           showLogging = def &= text "show mapping"
+                         } &= text "change logging settings"
+
+diagTest = mode $ DiagTest { script = def &= text "diagnoser script to run" }
+
+  -- filterPath = def &= typDir & flag "P" & typ "DIR" & text "path of input file",
+  -- filterRegex = def &= flag "R" & typ "REGEX" & text "regex to filter lines",
+  -- inverse = def &= text "invert filtering (filter out everything that does NOT match)"
 
 main ::  IO ()
 main = withSocketsDo $ do 
   actions <- cmdArgs "DiagnosisTool 0.1.0, (c) Oliver Mueller 2010" modes
   execute actions
 
-execute :: Sample -> IO ()
-execute (Diagsend m) = putStrLn $ "send: " ++ show m
+execute :: DiagTool -> IO ()
+execute (Diagsend m) = do
+  putStrLn $ "send: " ++ show m
+  sendData conf [0x22,0xF1,0x90]
+  return ()
 execute (ReadDtc x)
-  | x == 1 = print "readPrimaryErrorMemory" -- readPrimaryErrorMemory
-  | x == 2 = print "readSecondaryErrorMemory" -- readSecondaryErrorMemory
-execute (Logging x) 
-  | x == 1  = enable
-  | x == 2  = showMapping
+  | x == 1 = readPrimaryErrorMemory
+  | x == 2 = readSecondaryErrorMemory
+execute (Logging e m) = do
+  when e enable
+  when m showMapping
+execute (DiagTest s) = do
+    print $ "running script " ++ s
+    runTestScript s
 
-execute2 (ReadPrimaryDtcs s o) = print "Create was called..."
-execute2 (Diff old new o) = print "Create was called..."
-
-data DTCHandling = ReadPrimaryDtcs {src :: FilePath, out :: FilePath}
-                 | Diff {old :: FilePath, new :: FilePath, out :: FilePath}
-                   deriving (Data,Typeable,Show,Eq)
-
-outFlags = text "Output file" & typFile
-
-create = mode $ ReadPrimaryDtcs
-    {src = "." &= text "Source directory" & typDir
-    ,out = "ls.txt" &= outFlags
-    } &= prog "diagtool" & text "read error memory"
-
-diff = mode $ Diff
-    {old = def &= typ "OLDFILE" & argPos 0
-    ,new = def &= typ "NEWFILE" & argPos 1
-    ,out = "diff.txt" &= outFlags
-    } &= text "Perform a diff"
-
--- modes = [create,diff]
-modes = [diagSend,dtc,logging]
+modes = [diagSend,dtc,logging,diagTest]

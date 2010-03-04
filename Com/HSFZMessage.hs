@@ -1,4 +1,4 @@
-module HSFZMessage
+module Com.HSFZMessage
 
 where
 

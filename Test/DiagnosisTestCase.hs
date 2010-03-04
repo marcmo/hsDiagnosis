@@ -1,8 +1,8 @@
-module DiagnosisTestCase
+module Test.DiagnosisTestCase
 
 where
 
-import DiagMessage
+import Com.DiagMessage
 import Data.Word
 import Util
 
