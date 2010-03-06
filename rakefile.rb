@@ -6,7 +6,8 @@ Output="output.out"
 MainHs="Main.hs"
 DiagScripterHs="DiagScripterMain.hs"
 Executable = "diagnosis"
-DiagScripter = "diagnosis2"
+DiagScripter = "diag_scripter"
+TmpFolder = "tmp"
 #Profiling
 ProfilingExecutable = "for_profiling"
 TimeProf="+RTS -p -K100M"      
@@ -17,26 +18,26 @@ Profiling=TimeProf
 # Profiling=StandardHeap
 # Profiling=AllocationType
 # Profiling=ConstructorAlloc
-CLEAN.include(Output,"**/*.o","**/*.hi","dist",Executable,DiagScripter,"#{ProfilingExecutable}*")
+CLEAN.include(TmpFolder,Output,"**/*.o","**/*.hi","dist",Executable,DiagScripter,"#{ProfilingExecutable}*")
 SrcFiles = FileList.new('**/*.hs')
 
 file DiagScripter => SrcFiles do
   puts "building executable..."
-  sh "ghc -O2 -o #{DiagScripter} -outputdir tmp --make #{DiagScripterHs} -threaded -fforce-recomp"
+  sh "ghc -O2 -o #{DiagScripter} -outputdir #{TmpFolder} --make #{DiagScripterHs} -threaded -fforce-recomp"
 end
 file Executable => SrcFiles do
   puts "building executable..."
-  sh "ghc -O2 -o #{Executable} -outputdir tmp --make #{MainHs} -threaded -fforce-recomp"
+  sh "ghc -O2 -o #{Executable} -outputdir #{TmpFolder} --make #{MainHs} -threaded -fforce-recomp"
   # sh "runhaskell Setup.lhs --user configure"
   # sh "runhaskell Setup.lhs build"
 end
 desc "build executable"
 task :build => [:clean,Executable]
 desc "build diagScripter"
-task :diagscripter => [:clean,DiagScripter]
+task :scripter => [:clean,DiagScripter]
 
 file ProfilingExecutable => SrcFiles do
-  sh "ghc -O2 -o #{ProfilingExecutable} -outputdir tmp --make #{MainHs} -prof -auto-all -caf-all -fforce-recomp"
+  sh "ghc -O2 -o #{ProfilingExecutable} -outputdir #{TmpFolder} --make #{MainHs} -prof -auto-all -caf-all -fforce-recomp"
 end
 
 desc "run all quickCheck testcases"

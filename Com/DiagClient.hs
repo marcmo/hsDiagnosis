@@ -114,7 +114,9 @@ receiveDataMsg h buf v = do
 
 responsePending ::  Maybe HSFZMessage -> Bool
 responsePending = 
-  maybe False (\m->matchPayload (hsfz2diag m) [0x7F,0x19,0x78])
+  maybe False (\m->
+    let p = diagPayload (hsfz2diag m) in
+      length p == 3 && p!!0 == 0x7f && p!!2 == 0x78)
 
 receiveMsg ::  Handle -> Ptr CChar -> Bool -> IO (Maybe HSFZMessage)
 receiveMsg h buf verbose = do
