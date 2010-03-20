@@ -2,6 +2,20 @@ require 'rake/clean'
 require 'benchmark'
 
 Output="output.out"
+module OS
+  def OS.windows?
+    (RUBY_PLATFORM =~ /cygwin|mswin|mingw|bccwin|wince|emx/) != nil
+  end
+  def OS.mac?
+    (RUBY_PLATFORM =~ /darwin/) != nil
+  end
+  def OS.unix?
+    !OS.windows?
+  end
+  def OS.linux?
+    OS.unix? and not OS.mac?
+  end
+end
 
 MainHs="Main.hs"
 DiagScripterHs="DiagScripterMain.hs"
@@ -24,12 +38,12 @@ SrcFiles = FileList.new('**/*.hs')
 file DiagScripter => SrcFiles do
   puts "building executable..."
   sh "ghc -O2 -o #{DiagScripter} -outputdir #{TmpFolder} --make #{DiagScripterHs} -threaded -fforce-recomp"
+  stripExec DiagScripter
 end
 file Executable => SrcFiles do
   puts "building executable..."
   sh "ghc -O2 -o #{Executable} -outputdir #{TmpFolder} --make #{MainHs} -threaded -fforce-recomp"
-  # sh "runhaskell Setup.lhs --user configure"
-  # sh "runhaskell Setup.lhs build"
+  stripExec Executable
 end
 desc "build executable"
 task :build => [:clean,Executable]
@@ -53,6 +67,13 @@ task :prof => [:clean,ProfilingExecutable] do
   puts "computing step took: " + sprintf("%.2f", benchmark)
   if Profiling!=TimeProf
     sh "hp2ps -e8in -c #{ProfilingExecutable}.hp"
+  end
+end
+
+def stripExec (x)
+  if OS.unix?
+    sh "strip #{Executable}"
+    sh "upx #{Executable}"
   end
 end
 

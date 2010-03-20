@@ -12,14 +12,15 @@ module Com.DiagClient
 where
 
 import Com.DiagMessage
+import Com.HSFZMessage
+import Diag.DiagnosisCodes
 import Network(PortID(PortNumber),connectTo)
 import System.IO
 import Control.Concurrent(putMVar,MVar,forkIO,newEmptyMVar,takeMVar)
-import Com.HSFZMessage
 import Foreign(Ptr,Word8,free,mallocBytes)
 import Foreign.C.String(peekCStringLen)
 import Foreign.C.Types(CChar)
-import Control.Monad.Reader(runReaderT,asks,liftIO,when,ReaderT)
+import Control.Monad.Reader
 import Control.OldException -- *** for base-4
 import Text.Printf(printf)
 import Util(string2hex)
@@ -28,7 +29,7 @@ import Prelude hiding (catch,log)
 receiveBufSize = 4096
 pollingMs = 100
 
-data DiagConnection = DiagConnection { diagHandle :: Handle, verboseL :: Bool }
+data DiagConnection = DiagConnection { diagHandle :: Handle, chatty :: Bool }
 data DiagConfig = MkDiagConfig {
   host :: String,
   port :: Int,
@@ -40,7 +41,17 @@ data DiagConfig = MkDiagConfig {
 type Net = ReaderT DiagConnection IO
 -- TODO: use ByteString
 sendData ::  DiagConfig -> [Word8] -> IO (Maybe DiagnosisMessage)
-sendData c = sendDiagMsg c . DiagnosisMessage (string2hex $ source c) (string2hex $ target c)
+sendData c xs = do
+  resp <- sendDiagMsg c $ DiagnosisMessage (string2hex $ source c) (string2hex $ target c) xs
+  when (isNegativeResponse resp) $ do
+    let (Just (DiagnosisMessage _ _ (_:_:err:_))) = resp
+    print err
+    print $ "negative response: " ++ nameOfError err
+  return resp
+
+isNegativeResponse Nothing = False
+isNegativeResponse (Just (DiagnosisMessage _ _ (x:xs))) =
+  x == negative_response_identifier
 
 sendDataTo :: DiagConfig -> [Word8] -> Word8 -> Word8 -> IO (Maybe DiagnosisMessage)
 sendDataTo c xs src target = (sendDiagMsg c . DiagnosisMessage src target) xs
@@ -77,40 +88,42 @@ diagConnect c = notify $ do
 
 run :: HSFZMessage -> Net (Maybe HSFZMessage)
 run msg = do
-    h <- asks diagHandle
-    v <- asks verboseL
     b <- io newEmptyMVar
-    io $ forkIO $ listenForResponse b h v
-    io (pushOutMessage msg h v)
+    ReaderT $ \r ->
+      forkIO $ runReaderT (listenForResponse b) r
+    pushOutMessage msg
     io $ takeMVar b 
 
-pushOutMessage :: HSFZMessage -> Handle -> Bool -> IO ()
-pushOutMessage msg handle verbose = do
-    when verbose $ printPayload "-->" msg
-    hPutStr handle (msg2ByteString msg)
-    hFlush handle -- Make sure that we send data immediately
+pushOutMessage :: HSFZMessage -> Net ()
+pushOutMessage msg = do
+    h <- asks diagHandle
+    log ("--> " ++ show msg)
+    io $ hPutStr h (msg2ByteString msg)
+    io $ hFlush h -- Make sure that we send data immediately
 
-listenForResponse ::  MVar (Maybe HSFZMessage) -> Handle -> Bool -> IO ()
-listenForResponse m h verbose = do
-    msg <- receiveResponse h verbose
-    putMVar m msg
+liftReader a = ReaderT (return . runReader a)
+
+listenForResponse ::  MVar (Maybe HSFZMessage) -> Net ()
+listenForResponse m = do
+    msg <- receiveResponse
+    io $ putMVar m msg
     return ()
 
-receiveResponse :: Handle -> Bool -> IO (Maybe HSFZMessage)
-receiveResponse h verbose = do
-    buf <- mallocBytes receiveBufSize
-    dataResp <- receiveDataMsg h buf verbose
-    free buf
+receiveResponse :: Net (Maybe HSFZMessage)
+receiveResponse = do
+    buf <- io $ mallocBytes receiveBufSize
+    dataResp <- receiveDataMsg buf
+    io $ free buf
     if responsePending dataResp
-      then print "...received response pending" >> receiveResponse h verbose 
+      then (io $ print "...received response pending") >> receiveResponse
       else return dataResp
 
-receiveDataMsg ::  Handle -> Ptr CChar -> Bool -> IO (Maybe HSFZMessage)
-receiveDataMsg h buf v = do
-    msg <- receiveMsg h buf v
-    when v $ maybe (return ()) (printPayload "<--") msg
+receiveDataMsg ::  Ptr CChar -> Net (Maybe HSFZMessage)
+receiveDataMsg buf = do
+    msg <- receiveMsg buf 
+    maybe (return ()) (\m -> log $ "<-- " ++ show m) msg
     maybe (return Nothing)
-      (\m->if isData m then log v "was data!" >> return msg else log v "was no data packet" >> receiveDataMsg h buf v) msg
+      (\m->if isData m then (log "was data!") >> return msg else (log "was no data packet") >> receiveDataMsg buf) msg
 
 responsePending ::  Maybe HSFZMessage -> Bool
 responsePending = 
@@ -118,27 +131,31 @@ responsePending =
     let p = diagPayload (hsfz2diag m) in
       length p == 3 && p!!0 == 0x7f && p!!2 == 0x78)
 
-receiveMsg ::  Handle -> Ptr CChar -> Bool -> IO (Maybe HSFZMessage)
-receiveMsg h buf verbose = do
-    dataAvailable <- waitForData h diagTimeout verbose
-    if not dataAvailable then print "no message available..." >> return Nothing
+receiveMsg ::  Ptr CChar -> Net (Maybe HSFZMessage)
+receiveMsg buf = do
+    h <- asks diagHandle
+    dataAvailable <- waitForData diagTimeout
+    if not dataAvailable then (io $ print "no message available...") >> return Nothing
       else do
-        answereBytesRead <- hGetBufNonBlocking h buf receiveBufSize
-        res2 <- peekCStringLen (buf,answereBytesRead)
+        answereBytesRead <- io $ hGetBufNonBlocking h buf receiveBufSize
+        res2 <- io $ peekCStringLen (buf,answereBytesRead)
         return $ bytes2msg res2
 
-waitForData ::  Handle -> Int -> Bool -> IO (Bool)
-waitForData h waitTime_ms verbose = do
-  putStr "."
-  when verbose $ printf "waitForData %d ms\n" waitTime_ms
-  inputAvailable <- hWaitForInput h pollingMs
+waitForData ::  Int -> Net (Bool)
+waitForData waitTime_ms = do
+  h <- asks diagHandle
+  io $ putStr "."
+  log ("waitForData " ++ show waitTime_ms ++ " ms\n")
+  inputAvailable <- io $ hWaitForInput h pollingMs
   if inputAvailable then return True 
     else if waitTime_ms > 0
-          then waitForData h (waitTime_ms - pollingMs) verbose
+          then waitForData (waitTime_ms - pollingMs)
           else return False
 
 -- Convenience.
 io :: IO a -> Net a
 io = liftIO
-log ::  (Show a) => Bool -> a -> IO ()
-log v = when v . print
+log ::  (Show a) => a -> Net ()
+log s = do
+    v <- asks chatty
+    when v $ io $ print s

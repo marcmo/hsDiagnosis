@@ -16,13 +16,13 @@ data HSFZMessage = HSFZMessage {
   controllBit :: ControlBit,
   payloadLen :: Int,
   payload :: [Word8]
-} deriving (Show)
+}
+
+instance Show HSFZMessage where
+  show (HSFZMessage _ _ xs) = showAsHexString xs
 
 dataMessage :: [Word8] -> HSFZMessage
 dataMessage xs = HSFZMessage DataBit (length xs) xs
-
-printPayload ::  String -> HSFZMessage -> IO ()
-printPayload s msg = print $ s ++ showAsHexString (payload msg)
 
 isAck :: HSFZMessage -> Bool
 isAck m = controllBit m == AckBit

@@ -10,7 +10,32 @@ import qualified Test.Framework as TF -- (defaultMainWithOpts, testGroup, Test)
 import Test.Framework.Providers.HUnit
 import qualified Test.HUnit as HUnit
 import Control.Monad.Reader
+-- import Criterion.Main
+-- import Criterion.Config
+import Data.Monoid(mempty)
 
+
+-- fibIo :: Int -> IO ()
+-- fibIo n = print $ fib n
+-- benchmarkConfig :: Config
+-- benchmarkConfig = Config {
+--                   cfgBanner       = ljust "I don't know what version I am."
+--                 , cfgConfInterval = ljust 0.95
+--                 , cfgPerformGC    = ljust False
+--                 , cfgPlot         = mempty
+--                 , cfgPlotSameAxis = ljust False
+--                 , cfgPrintExit    = Nada
+--                 , cfgResamples    = ljust (100 * 1000)
+--                 , cfgSamples      = ljust 100
+--                 , cfgSummaryFile  = mempty
+--                 , cfgVerbosity    = ljust Normal
+--                 }
+
+-- main = defaultMain [
+--        bgroup "fib" [ bench "fib 10" $ fibIo 10
+--                     , bench "fib 35" $ fibIo 35
+--                     ]
+--                    ]
 -- run with: runhaskell DiagScriptTester.hs "Script/nvramtest.skr"
 -- main = do 
 --   (f:_) <- getArgs
@@ -18,22 +43,18 @@ import Control.Monad.Reader
 
 -- TODO: implement glob-patterns for matches
 
-
-type TestConfig = ReaderT DiagConfig IO
-
-runTestScript ::  FilePath -> TestConfig ()
+runTestScript ::  FilePath -> IO ()
 runTestScript f = do
-  diagScript <- io $ readFile f
+  diagScript <- readFile f
   case parseScript diagScript of 
-    Left err -> do io $ putStrLn "Error parsing diagScript:"
-                   io $ print err
+    Left err -> do putStrLn "Error parsing diagScript:"
+                   print err
     Right script -> do
-      io $ putStrLn $ "testing " ++ f
-      c <- ask
-      let scriptTests = runReader (extractTests script) c
-      io $ TF.defaultMainWithArgs scriptTests []
+      putStrLn $ "testing " ++ f
+      let scriptTests = extractTests script
+      TF.defaultMainWithArgs scriptTests []
 
-extractTests ::  DiagScript -> Reader DiagConfig [TF.Test]
+extractTests ::  DiagScript -> [TF.Test]
 extractTests (DiagScript s) = map extractTest s
 
 extractTest :: ScriptElement -> TF.Test
@@ -50,5 +71,3 @@ test2case (TestCase n msg exp time s t) = do
   maybe (HUnit.assertString "no response received") (\m->
     HUnit.assertEqual n exp m) resp
 
-io :: IO a -> TestConfig a
-io = liftIO
