@@ -7,6 +7,7 @@ import Numeric(showHex,readHex)
 import Data.Char(chr,ord)
 import Data.Word(Word8)
 import Util
+import Debug.Trace
 import Com.HSFZMessage
 import Data.Bits
 import Data.List(intersperse,intercalate)
@@ -41,15 +42,26 @@ hsfz2diag hm = DiagnosisMessage (diagBytes!!0) (diagBytes!!1) (drop 2 diagBytes)
 msg2ByteString :: HSFZMessage -> String
 msg2ByteString (HSFZMessage bit len payload) =
   map chr $ encodeLength len ++ [0,control2Int bit] ++ (map word8ToInt payload)
+msg2ints :: HSFZMessage -> String
+msg2ints (HSFZMessage bit len payload) = 
+  showAsHexNumbers $ encodeLength len ++ [0,control2Int bit] ++ (map word8ToInt payload)
+
+showAsHexNumbers :: [Int] -> String
+showAsHexNumbers xs = concat $ intersperse "," $ map (showAsHex . int2Word8) xs
+
+showBinString xs = let ys = map (ord) xs in
+  showAsHexNumbers ys
 
 bytes2msg :: String -> Maybe HSFZMessage
 bytes2msg s =
   nothingIf (length s < headerLen) >>
     let payloadLength = parseLength s in
         nothingIf (length s /= headerLen + payloadLength) >>
-          let b = int2control $ ord $ head $ drop 5 s 
-              payload = ["hi"] in 
+          let b = int2control $ ord $ head $ drop 5 s in
             Just $ HSFZMessage b payloadLength (map (int2Word8 . ord) $ drop headerLen s)
+
+printResponse (Just m) = print $ "received over the wire: " ++ (msg2ints m)
+printResponse _ =  print "received nothing"
 
 nothingIf ::  Bool -> Maybe Int
 nothingIf True = Nothing

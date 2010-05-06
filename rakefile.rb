@@ -32,7 +32,8 @@ Profiling=TimeProf
 # Profiling=StandardHeap
 # Profiling=AllocationType
 # Profiling=ConstructorAlloc
-CLEAN.include(TmpFolder,Output,"**/*.o","**/*.hi","dist",Executable,DiagScripter,"#{ProfilingExecutable}*")
+CLEAN.include(TmpFolder,Output,"**/*.o","**/*.hi","dist")
+CLOBBER.include(Executable,DiagScripter,"#{ProfilingExecutable}*")
 SrcFiles = FileList.new('**/*.hs')
 
 file DiagScripter => SrcFiles do

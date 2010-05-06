@@ -4,7 +4,7 @@ where
 
 import Com.DiagClient
 
-debug_on = True
+debug_on = False
 
 conf = femConfig ip_A
 zgwConf = zgwConfig ip_A

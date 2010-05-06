@@ -1,3 +1,4 @@
+{-# LANGUAGE ScopedTypeVariables #-}
 module Com.DiagClient
     (
       module Com.DiagMessage,
@@ -21,7 +22,7 @@ import Foreign(Ptr,Word8,free,mallocBytes)
 import Foreign.C.String(peekCStringLen)
 import Foreign.C.Types(CChar)
 import Control.Monad.Reader
-import Control.OldException -- *** for base-4
+import Control.Exception
 import Text.Printf(printf)
 import Util(string2hex)
 import Prelude hiding (catch,log)
@@ -60,7 +61,7 @@ sendMessage :: DiagConfig -> HSFZMessage -> IO (Maybe HSFZMessage)
 sendMessage c msg = bracket (diagConnect c) disconnect loop
   where
     disconnect = hClose . diagHandle
-    loop st    = catch (runReaderT (run msg) st) (\(IOException _) -> return Nothing)
+    loop st    = catch (runReaderT (run msg) st) (\(_ :: IOException) -> return Nothing)
 
 sendBytes :: DiagConfig -> [Word8] -> IO (Maybe HSFZMessage)
 sendBytes c = sendMessage c . dataMessage
@@ -98,6 +99,7 @@ pushOutMessage :: HSFZMessage -> Net ()
 pushOutMessage msg = do
     h <- asks diagHandle
     log ("--> " ++ show msg)
+    io $ print $ "sending over the wire: " ++ (msg2ints msg)
     io $ hPutStr h (msg2ByteString msg)
     io $ hFlush h -- Make sure that we send data immediately
 
@@ -105,9 +107,9 @@ liftReader a = ReaderT (return . runReader a)
 
 listenForResponse ::  MVar (Maybe HSFZMessage) -> Net ()
 listenForResponse m = do
-    msg <- receiveResponse
-    io $ putMVar m msg
-    return ()
+   msg <- receiveResponse
+   io $ putMVar m msg
+   return ()
 
 receiveResponse :: Net (Maybe HSFZMessage)
 receiveResponse = do
@@ -139,6 +141,7 @@ receiveMsg buf = do
       else do
         answereBytesRead <- io $ hGetBufNonBlocking h buf receiveBufSize
         res2 <- io $ peekCStringLen (buf,answereBytesRead)
+        io $ (print $ "received over the wire: " ++ (showBinString res2))
         return $ bytes2msg res2
 
 waitForData ::  Int -> Net (Bool)
