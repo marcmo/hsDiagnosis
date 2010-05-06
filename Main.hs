@@ -23,7 +23,7 @@ data DiagTool = Diagsend { ip :: String, diagId :: String, message :: String }
 
 diagSend = mode $ Diagsend {ip = "10.40.39.68" &= text "ip address",
                             diagId = "10" &= text "diagnosis id",
-                            message = "0x22,0xF1,0x90" &= text "diagnostic message to be sent"}
+                            message = "[0x22,0xF1,0x90]" &= text "diagnostic message to be sent"}
 dtc = mode $ ReadDtc { dtcKind = 1} &= text "read DTCs in ecu (primary = 1, secondary = 2)"
 logging = mode $ Logging { enableLogging = def &= text "enable logging",
                            showLogging = def &= text "show mapping"
