@@ -25,6 +25,7 @@ import Control.Monad.Reader
 import Control.Exception
 import Text.Printf(printf)
 import Util(string2hex)
+import Debug.Trace
 import Prelude hiding (catch,log)
 
 receiveBufSize = 4096
@@ -123,6 +124,7 @@ receiveResponse = do
 receiveDataMsg ::  Ptr CChar -> Net (Maybe HSFZMessage)
 receiveDataMsg buf = do
     msg <- receiveMsg buf 
+    log $ "was " ++ show msg
     maybe (return ()) (\m -> log $ "<-- " ++ show m) msg
     maybe (return Nothing)
       (\m->if isData m then (log "was data!") >> return msg else (log "was no data packet") >> receiveDataMsg buf) msg
@@ -141,7 +143,7 @@ receiveMsg buf = do
       else do
         answereBytesRead <- io $ hGetBufNonBlocking h buf receiveBufSize
         res2 <- io $ peekCStringLen (buf,answereBytesRead)
-        io $ (print $ "received over the wire: " ++ (showBinString res2))
+        log $ "received over the wire: " ++ (showBinString res2)
         return $ bytes2msg res2
 
 waitForData ::  Int -> Net (Bool)

@@ -53,15 +53,12 @@ showBinString xs = let ys = map (ord) xs in
   showAsHexNumbers ys
 
 bytes2msg :: String -> Maybe HSFZMessage
-bytes2msg s =
+bytes2msg s = 
   nothingIf (length s < headerLen) >>
     let payloadLength = parseLength s in
         nothingIf (length s /= headerLen + payloadLength) >>
           let b = int2control $ ord $ head $ drop 5 s in
-            Just $ HSFZMessage b payloadLength (map (int2Word8 . ord) $ drop headerLen s)
-
-printResponse (Just m) = print $ "received over the wire: " ++ (msg2ints m)
-printResponse _ =  print "received nothing"
+             Just $ HSFZMessage b payloadLength (map (int2Word8 . ord) $ drop headerLen s)
 
 nothingIf ::  Bool -> Maybe Int
 nothingIf True = Nothing
