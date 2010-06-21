@@ -69,7 +69,7 @@ nothingIf False = Just 0
 
 parseLength :: String -> Int
 parseLength s = (ord $ s!!3) .|. 
-  ((ord $ s!!2) `shiftL` 7)  .|. 
+  ((ord $ s!!2) `shiftL` 8)  .|. 
   ((ord $ s!!1) `shiftL` 16) .|. 
   ((ord $ s!!0) `shiftL` 24)  
 
