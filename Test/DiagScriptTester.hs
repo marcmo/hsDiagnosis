@@ -10,36 +10,12 @@ import qualified Test.Framework as TF -- (defaultMainWithOpts, testGroup, Test)
 import Test.Framework.Providers.HUnit
 import qualified Test.HUnit as HUnit
 import Control.Monad.Reader
--- import Criterion.Main
--- import Criterion.Config
 import Data.Monoid(mempty)
 
-
--- fibIo :: Int -> IO ()
--- fibIo n = print $ fib n
--- benchmarkConfig :: Config
--- benchmarkConfig = Config {
---                   cfgBanner       = ljust "I don't know what version I am."
---                 , cfgConfInterval = ljust 0.95
---                 , cfgPerformGC    = ljust False
---                 , cfgPlot         = mempty
---                 , cfgPlotSameAxis = ljust False
---                 , cfgPrintExit    = Nada
---                 , cfgResamples    = ljust (100 * 1000)
---                 , cfgSamples      = ljust 100
---                 , cfgSummaryFile  = mempty
---                 , cfgVerbosity    = ljust Normal
---                 }
-
--- main = defaultMain [
---        bgroup "fib" [ bench "fib 10" $ fibIo 10
---                     , bench "fib 35" $ fibIo 35
---                     ]
---                    ]
 -- run with: runhaskell DiagScriptTester.hs "Script/nvramtest.skr"
--- main = do 
---   (f:_) <- getArgs
---   runTestScript f
+main = do 
+  (f:_) <- getArgs
+  runTestScript f
 
 -- TODO: implement glob-patterns for matches
 

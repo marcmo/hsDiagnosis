@@ -45,6 +45,7 @@ type Net = ReaderT DiagConnection IO
 sendData ::  DiagConfig -> [Word8] -> IO (Maybe DiagnosisMessage)
 sendData c xs = do
   resp <- sendDiagMsg c $ DiagnosisMessage (string2hex $ source c) (string2hex $ target c) xs
+  print $ show resp
   when (isNegativeResponse resp) $ do
     let (Just (DiagnosisMessage _ _ (_:_:err:_))) = resp
     print err

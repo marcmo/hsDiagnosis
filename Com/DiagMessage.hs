@@ -54,11 +54,11 @@ showBinString xs = let ys = map (ord) xs in
 
 bytes2msg :: String -> Maybe HSFZMessage
 bytes2msg s = 
-  nothingIf (length s < headerLen) >>
-    let payloadLength = parseLength s in
-        nothingIf (length s /= headerLen + payloadLength) >>
-          let b = int2control $ ord $ head $ drop 5 s in
-             Just $ HSFZMessage b payloadLength (map (int2Word8 . ord) $ drop headerLen s)
+  if (length s < headerLen) || (length s /= headerLen + payloadLength)
+    then Nothing
+    else return $ HSFZMessage b payloadLength (map (int2Word8 . ord) $ drop headerLen s)
+      where payloadLength = parseLength s
+            b = (int2control . ord . head . drop 5) s
 
 nothingIf ::  Bool -> Maybe Int
 nothingIf True = Nothing
