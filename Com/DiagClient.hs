@@ -44,6 +44,7 @@ type Net = ReaderT DiagConnection IO
 -- TODO: use ByteString
 sendData ::  DiagConfig -> [Word8] -> IO (Maybe DiagnosisMessage)
 sendData c xs = do
+  print $ "send to " ++ host c
   resp <- sendDiagMsg c $ DiagnosisMessage (string2hex $ source c) (string2hex $ target c) xs
   print $ show resp
   when (isNegativeResponse resp) $ do

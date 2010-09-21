@@ -77,6 +77,10 @@ def stripExec (x)
     sh "upx #{Executable}"
   end
 end
+desc 'execute nvramtest.skr test files'
+task :nvram do
+  sh "runghc Test/DiagScriptTester.hs \"Script/nvramtest.skr\""
+end
 
 task :default => [:clean, :build]
 
