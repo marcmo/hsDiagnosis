@@ -6,7 +6,7 @@ import Text.Regex(splitRegex,mkRegex)
 import Numeric(showHex,readHex)
 import Data.Char(chr,ord)
 import Data.Word(Word8)
-import Util
+import Util.Encoding
 import Debug.Trace
 import Com.HSFZMessage
 import Data.Bits

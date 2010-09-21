@@ -1,0 +1,32 @@
+Name:                diagnosis
+Version:             0.1
+Synopsis:            haskell implementation of diagnostic framework
+-- A longer description of the package.
+-- Description:         
+License:             BSD3
+License-file:        LICENSE
+Author:              oliver mueller
+Maintainer:          oliver.mueller@gmail.com
+Category:            Development
+Build-type:          Simple
+-- Extra files to be distributed with the package, such as examples or
+-- a README.
+-- Extra-source-files:  
+Cabal-version:       >=1.2
+
+Executable diagnosis
+  Main-is:   Main.hs
+  Build-Depends:      haskell98,cmdargs,bytestring,pcre-light,parsec>=3.0,base,mtl,HUnit,test-framework-hunit,test-framework,network,
+                      regex-compat
+
+Executable nvram
+  Main-is:   Main.hs
+  Build-Depends:      haskell98,cmdargs,bytestring,pcre-light,parsec>=3.0,base,mtl,HUnit,test-framework-hunit,test-framework,network,
+                      regex-compat
+  
+  -- Modules not exported by this package.
+  -- Other-modules:       
+  
+  -- Extra tools (e.g. alex, hsc2hs, ...) needed to build the source.
+  -- Build-tools:         
+  

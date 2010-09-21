@@ -9,11 +9,12 @@ import Network.Socket
 import Script.ErrorMemory
 import Script.LoggingFramework
 import Numeric(showHex,readHex)
-import Util
+import Util.Encoding
 import Data.Word
 import Test.DiagScriptTester(runTestScript)
-import ParserUtil
+import Text.ParserCombinators.Parsec hiding (many, optional, (<|>))
 import Text.Parsec.Token
+import Control.Applicative
 
 data DiagTool = Diagsend { ip :: String, diagId :: String, message :: String }
               | ReadDtc { dtcKind :: Int }
@@ -63,9 +64,8 @@ execute (ReadDtc x)
   | x == 1 = readPrimaryErrorMemory
   | x == 2 = readSecondaryErrorMemory
 execute (Logging logIp e m) = do
-  let config = mkConf (drop 2 $ showAsHex tid) ip
   when e enable
-  when m showMappingWithConf
+  when m $ showMappingWithConf conf
 execute (DiagTest s) = do
     print $ "running script " ++ s
     runTestScript s

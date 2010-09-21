@@ -4,7 +4,7 @@ where
 
 import Data.Word(Word8)
 import Data.List(intersperse)
-import Util
+import Util.Encoding
 
 data ControlBit = AckBit | DataBit deriving (Show,Eq)
 control2Int DataBit = 1

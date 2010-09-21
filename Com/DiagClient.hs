@@ -24,7 +24,7 @@ import Foreign.C.Types(CChar)
 import Control.Monad.Reader
 import Control.Exception
 import Text.Printf(printf)
-import Util(string2hex)
+import Util.Encoding(string2hex)
 import Debug.Trace
 import Prelude hiding (catch,log)
 
