@@ -52,14 +52,6 @@ main = withSocketsDo $ do
   execute actions
 
 execute :: DiagTool -> IO ()
-execute (Diagsend ip diagid m) = do
-  putStrLn $ "send: " ++ show m ++ " to " ++ ip ++ " (diag-addr.:" ++ diagid ++ ")"
-  case parseTesterId diagid of
-    (Right tid) ->  do  let config = mkConf (drop 2 $ showAsHex tid) ip
-                        case parseDiagMsg m of
-                          (Right msg) -> sendData config msg >> return ()
-                          _ -> print "diag message format not correct (use s.th. like 0x22,0xF1)" >> return ()
-    _ -> return ()
 execute (ReadDtc x)
   | x == 1 = readPrimaryErrorMemory
   | x == 2 = readSecondaryErrorMemory
@@ -69,5 +61,12 @@ execute (Logging logIp e m) = do
 execute (DiagTest s) = do
     print $ "running script " ++ s
     runTestScript s
+execute (Diagsend ip diagid m) = do
+  case parseTesterId diagid of
+    (Right tid) ->  do  let config = mkConf (drop 2 $ showAsHex tid) ip
+                        case parseDiagMsg m of
+                          (Right msg) -> sendData config msg >> return ()
+                          _ -> print "diag message format not correct (use s.th. like 0x22,0xF1)" >> return ()
+    _ -> return ()
 
 modes = [diagSend,dtc,logging,diagTest]

@@ -16,14 +16,10 @@ Cabal-version:       >=1.2
 
 Executable diagnosis
   Main-is:   Main.hs
-  Build-Depends:      haskell98,cmdargs,bytestring,pcre-light,parsec>=3.0,base,mtl,HUnit,test-framework-hunit,test-framework,network,
+  Build-Depends:      haskell98,cmdargs,bytestring,pcre-light,parsec>=3.0,base>=4,mtl,HUnit,test-framework-hunit,test-framework,network,
                       regex-compat
+  GHC-Options:        -threaded
 
-Executable nvram
-  Main-is:   Main.hs
-  Build-Depends:      haskell98,cmdargs,bytestring,pcre-light,parsec>=3.0,base,mtl,HUnit,test-framework-hunit,test-framework,network,
-                      regex-compat
-  
   -- Modules not exported by this package.
   -- Other-modules:       
   

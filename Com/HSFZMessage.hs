@@ -5,12 +5,14 @@ where
 import Data.Word(Word8)
 import Data.List(intersperse)
 import Util.Encoding
+import Debug.Trace
 
 data ControlBit = AckBit | DataBit deriving (Show,Eq)
 control2Int DataBit = 1
 control2Int AckBit = 2
 int2control 1 = DataBit
 int2control 2 = AckBit
+int2control x = (trace $ "int2control not defined for: " ++ show x) undefined
 
 data HSFZMessage = HSFZMessage {
   controllBit :: ControlBit,
