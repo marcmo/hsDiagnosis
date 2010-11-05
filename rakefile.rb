@@ -18,8 +18,10 @@ module OS
 end
 
 MainHs="Main.hs"
+LuaMainHs="Lua_haskell.hs"
 DiagScripterHs="DiagScripterMain.hs"
 Executable = "diagnosis"
+LuaScripter = "lua_scripter"
 DiagScripter = "diag_scripter"
 TmpFolder = "tmp"
 #Profiling
@@ -33,7 +35,7 @@ Profiling=TimeProf
 # Profiling=AllocationType
 # Profiling=ConstructorAlloc
 CLEAN.include(TmpFolder,Output,"**/*.o","**/*.hi","dist")
-CLOBBER.include(Executable,DiagScripter,"#{ProfilingExecutable}*")
+CLOBBER.include(Executable,DiagScripter,LuaScripter,"#{ProfilingExecutable}*")
 SrcFiles = FileList.new('**/*.hs')
 
 file DiagScripter => SrcFiles do
@@ -46,10 +48,16 @@ file Executable => SrcFiles do
   sh "ghc -O2 -o #{Executable} -outputdir #{TmpFolder} --make #{MainHs} -threaded -fforce-recomp"
   stripExec Executable
 end
+file LuaScripter => SrcFiles do
+  puts "building lua-executable..."
+  sh "ghc -O2 -o #{LuaScripter} -outputdir #{TmpFolder} --make #{LuaMainHs} -threaded -fforce-recomp"
+end
 desc "build executable"
 task :build => [:clean,Executable]
 desc "build diagScripter"
 task :scripter => [:clean,DiagScripter]
+desc "build luaScripter"
+task :luascripter => [:clean,LuaScripter]
 
 file ProfilingExecutable => SrcFiles do
   sh "ghc -O2 -o #{ProfilingExecutable} -outputdir #{TmpFolder} --make #{MainHs} -prof -auto-all -caf-all -fforce-recomp"
