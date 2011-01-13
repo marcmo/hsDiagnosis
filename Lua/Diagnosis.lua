@@ -5,6 +5,7 @@ DiagTest.prototype = { target = 0x10 }
 DiagTest.mt={}
 
 function Diag.new(t)
+	print("new")
 	local msg = {}
 	setmetatable(msg,Diag.mt)
 	for i,v in ipairs(t) do
@@ -48,29 +49,35 @@ function Diag.match(msg,pattern)
 	local patPos = 1
 	local nextChar = nil
 	local state = "hex"
-	local result = true
+	local matching,not_matching,last_pattern_is_star = 0,1,2
+	local result = matching
 	local parseAction = {
 		["*"] = function (v,ppos) 
 			print (string.format("in *, patPos = %d",patPos)) 
+			if ppos == #pattern then
+				print("last pattern was star!")
+				return last_pattern_is_star
+			end
 			if v == nextChar then
 				print(string.format("in *, next char did match 0x%x",v))
-				return true,ppos+2,"hex"
+				return matching,ppos+2,"hex"
 			else
 				print(string.format("in *, wild card match for 0x%x",v))
-				return true,ppos,"*"
+				return matching,ppos,"*"
 			end
 		end,
 		["hex"] = function (v,ppos) 
-			print (string.format("in hex, patPos = %d",patPos)) 
+			--print (string.format("in hex, ppos = %d, pattern:%s",ppos,pattern[ppos])) 
+			--print ("type of v:",type(v))
 			if (v == pattern[ppos]) then
 				print(string.format ("in hex, got match for 0x%x",v))
-				return true,ppos+1,"hex"
+				return matching,ppos+1,"hex"
 			elseif (pattern[ppos]=="*") then
 				print(string.format("in hex, was wildcard match for 0x%x",v))
-				return true,ppos,"*"
+				return matching,ppos,"*"
 			else
 				--print(string.format("in hex, was nothing for 0x%x, pattern[%d] was %s",v,ppos,pattern[ppos]))
-				return false
+				return not_matching
 			end
 			return ppos,"",1
 		end
@@ -78,10 +85,10 @@ function Diag.match(msg,pattern)
 	for i,v in ipairs(msg) do
 		--print("checking pair for"..v.." and pat:"..pattern[patPos])
 		result,patPos,state = parseAction[state](v,patPos)
-		if not(result) then break end
+		if not(result==matching) then break end
 		nextChar = pattern[patPos+1]
 	end
-	return result
+	return ((result==matching) or (result==last_pattern_is_star))
 end
 function Diag.length(msg)
 	local s = 0

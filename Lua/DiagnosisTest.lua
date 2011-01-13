@@ -36,14 +36,14 @@ test = DiagTest.new {
 	timeout=2000,
 	source=0xf4, target=0x40 }
 
-function execTest(t)
+local function execTest2(t)
 	print(t.name)
 	print(string.format("sending %s to 0x%x",Diag.tostring(t.send),t.target))
 	local answer = {0xff,0x10,0x01,0x02}
 	print("matching:")
 	print(Diag.match(answer,t.expect))
 end
-execTest(test)
+execTest2(test)
 function string:split(sep)
 	local sep, fields = sep or ":", {}
 	local pattern = string.format("([^%s]+)", sep)
@@ -73,4 +73,4 @@ for i=start,string.len(input) do
 	print(string.format("0x%x",string.byte(input,i)))
 end
 
---lunatest.run()
+lunatest.run()
