@@ -22,16 +22,17 @@ data DiagTool = Diagsend { ip :: String, diagId :: String, message :: String }
               | DiagTest { script :: String }
                 deriving (Show, Data, Typeable)
 
-diagSend = mode $ Diagsend {ip = "10.40.39.68" &= text "ip address",
-                            diagId = "10" &= text "diagnosis id",
-                            message = "[0x22,0xF1,0x90]" &= text "diagnostic message to be sent"}
-dtc = mode $ ReadDtc { dtcKind = 1} &= text "read DTCs in ecu (primary = 1, secondary = 2)"
-logging = mode $ Logging { logIp = "10.40.39.68" &= text "ip address",
-                           enableLogging = def &= text "enable logging",
-                           showLogging = def &= text "show mapping"
-                         } &= text "change logging settings"
+diagSend = Diagsend {ip = "10.40.39.68" &= help "ip address",
+                            diagId = "10" &= help "diagnosis id",
+                            message = "[0x22,0xF1,0x90]" &= help "diagnostic message to be sent"}
+dtc = ReadDtc { dtcKind = 1 &= name "k" &= help "[primary = 1, secondary = 2]" } &= help "read DTCs in ecu"
 
-diagTest = mode $ DiagTest { script = def &= text "diagnoser script to run" }
+logging = Logging { logIp = "10.40.39.68" &= name "i" &= help "ip address",
+                           enableLogging = def &= help "enable logging",
+                           showLogging = def &= help "show mapping"
+                         } &= help "change logging settings"
+
+diagTest = DiagTest { script = def &= help "diagnoser script to run" }
 
 parseTesterId ::  String -> Either ParseError Word8
 parseTesterId = parse hexnumber "(unknown)"
@@ -41,14 +42,9 @@ hexlist :: CharParser () [Word8]
 hexlist = between (char '[') (char ']') (hexnumber `sepBy` char ',')
 hexnumber = fst . head . readHex <$> (skipMany (string "0x") *> many1 (hexDigit))
 
-parseTestA ::  String -> Either ParseError Char
-parseTestA = parse test "(unknown)"
-test :: CharParser () Char
-test = skipMany (string "0x") *> hexDigit
-
 main ::  IO ()
 main = withSocketsDo $ do 
-  actions <- cmdArgs "DiagnosisTool 0.1.0, (c) Oliver Mueller 2010" modes
+  actions <- cmdArgs $ ((modes [diagSend,dtc,logging,diagTest]) &= summary "DiagnosisTool 0.2.0, (c) Oliver Mueller 2010") &= verbosity
   execute actions
 
 execute :: DiagTool -> IO ()
@@ -69,4 +65,3 @@ execute (Diagsend ip diagid m) = do
                           _ -> print "diag message format not correct (use s.th. like 0x22,0xF1)" >> return ()
     _ -> return ()
 
-modes = [diagSend,dtc,logging,diagTest]

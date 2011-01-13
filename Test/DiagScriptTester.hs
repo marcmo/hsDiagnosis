@@ -3,9 +3,9 @@ module Test.DiagScriptTester where
 import Test.DiagScriptParser
 import DiagnosticConfig
 import Control.Monad
-import Maybe(fromJust)
+import Data.Maybe(fromJust)
 import Com.DiagClient
-import System (getArgs)
+import System.Environment (getArgs)
 import qualified Test.Framework as TF -- (defaultMainWithOpts, testGroup, Test)
 import Test.Framework.Providers.HUnit
 import qualified Test.HUnit as HUnit

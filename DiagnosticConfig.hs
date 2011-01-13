@@ -9,17 +9,17 @@ debug_on = False
 conf = femConfig ip_E
 zgwConf = zgwConfig ip_A
 
-ip_A = "10.40.39.26"
+ip_A = "10.40.39.21"
 ip_B = "10.40.39.33"
 ip_C = "10.40.39.5"
 ip_D = "10.40.39.44"
-ip_E = "10.40.39.48"
+ip_E = "10.40.39.13"
 ip_F = "10.40.39.49"
-msgTunnelIp = "10.40.39.68"
+msgTunnelIp = "10.40.39.48"
 
 fem = "40"
 zgw = "10"
-messageTunnel = "12"
+messageTunnel = "10"
 
 femConfig = mkConf fem
 zgwConfig = mkConf zgw

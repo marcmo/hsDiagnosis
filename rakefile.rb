@@ -56,8 +56,14 @@ desc "build executable"
 task :build => [:clean,Executable]
 desc "build diagScripter"
 task :scripter => [:clean,DiagScripter]
-desc "build luaScripter"
-task :luascripter => [:clean,LuaScripter]
+namespace "lua" do
+  desc "build luaScripter"
+  task :scripter => [:clean,LuaScripter]
+  desc "run lua_scripter"
+  task :run => LuaScripter do
+    sh "./#{LuaScripter}"
+  end
+end
 
 file ProfilingExecutable => SrcFiles do
   sh "ghc -O2 -o #{ProfilingExecutable} -outputdir #{TmpFolder} --make #{MainHs} -prof -auto-all -caf-all -fforce-recomp"

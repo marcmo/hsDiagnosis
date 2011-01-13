@@ -11,7 +11,7 @@ import Data.List
 int2Word8 x = fromIntegral x :: Word8
 word8ToInt x = fromIntegral x :: Int
 
-encodeInt :: Int -> Int -> [Word8]
+encodeInt :: (Integral a, Bits a) => a -> Int -> [Word8]
 encodeInt n width = 
             [int2Word8 $ 0xFF .&. (n `shiftR` s) | s <- reverse $ take width [0,8..]]
 
@@ -21,6 +21,14 @@ encodeLength len =
             ,0xFF .&. (len `shiftR` 16)
             ,0xFF .&. (len `shiftR` 8)
             ,0xFF .&. (len `shiftR` 0)]
+
+-- decodeLength :: [Word8] -> Word32
+-- decodeLength xs 
+--   | length xs < 4 = error "insufficient length for decoding"
+--   | otherwise =  (xs!!3) .|. 
+--                 ((xs!!2) `shiftL` 8)  .|. 
+--                 ((xs!!1) `shiftL` 16) .|. 
+--                 ((xs!!0) `shiftL` 24)  
 
 string2hex ::  String -> Word8
 string2hex = fst . head . readHex

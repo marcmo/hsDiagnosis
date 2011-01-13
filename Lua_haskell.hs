@@ -1,6 +1,7 @@
 import qualified Scripting.Lua as Lua
 import Data.Word
 import Com.DiagClient(sendData,diagPayload,Word8)
+import Script.LoggingFramework
 import DiagnosticConfig(conf)
 import Util.Encoding
 import Data.Char
@@ -28,13 +29,18 @@ main = do
  
     Lua.registerhsfunction l "send" hsSend
     Lua.registerhsfunction l "sleep" hsSleep
+    Lua.registerhsfunction l "showMapping" hsLoggingShow
+
     dofile l "Lua/base.lua"
     dofile l "Lua/script_send_diag.lua"
 
-    dostring l (0,0) "print(ip_address)"
     dostring l (1,1) "return ip_address"
-    ip <- Lua.tostring l (-1)
-    print ip
+    ipPresent <- Lua.isnil l (-1)
+    if ipPresent
+      then print "no ip_address defined"
+      else do
+          ip <- Lua.tostring l (-1)
+          print ip
     Lua.pop l 1
     d <- Lua.gettop l
     print $ "top: " ++ show d
@@ -47,13 +53,18 @@ hsSend :: String -> IO String
 hsSend xs = do
     let msgx = map (int2Word8 . ord) xs
     maybeResp <- sendData conf msgx
-    return $ maybe ("error occured! no response arrived")
-             (\resp->show $ convertToString (diagPayload resp))
-             maybeResp
+    let res =  maybe ("error occured! no response arrived")
+                (\resp-> convertToString (diagPayload resp))
+                maybeResp
+    putStrLn $ "response in haskell to send back to lua was:" ++ res
+    return res
 
 convertToString :: [Word8] -> String
 convertToString xs = map (chr . word8ToInt) xs
 
 hsSleep :: Int -> IO ()
 hsSleep n = threadDelay(1000*1000*n)
+
+hsLoggingShow :: IO ()
+hsLoggingShow = showMapping
 
