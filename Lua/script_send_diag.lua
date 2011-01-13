@@ -29,8 +29,7 @@ test_diag_job()
 
 test = DiagTest.new { name="TEST_DIAG_JOB", send=Diag.new{0x22,0xf1,0x90}, expect=Diag.new{0x62,"*"}, timeout=2000, source=0xf4, target=0x40 }
 execTest(test)
---inspectTable(fromMsg(resp))
---print(sendMsg{ 0xbf,0x12,0x4,0x3 })
+
 print("try to sleep...")
 sleep(1)
 print("woke up again!")

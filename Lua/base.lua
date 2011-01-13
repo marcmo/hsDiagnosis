@@ -27,12 +27,13 @@ function sendMsg(a)
   return wireformat2msg(resp)
 end
 function execTest(t)
-	print("execute Test:",t.name)
-	msg=t.send
-	print("msg to send = ",Diag.tostring(msg))
-	resp=sendMsg(msg)
-	local result = Diag.match(resp,t.expect)
-	print("test was :",result)
+	local msg = t.send
+	local resp = sendMsg(msg)
+	if Diag.match(resp,t.expect) then
+		print("success! for ",t.name)
+	else
+		print("FAILURE!!! for ",t.name)
+	end
 end
 
 function inspectTable(t)
