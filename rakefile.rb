@@ -20,9 +20,16 @@ end
 MainHs="Main.hs"
 LuaMainHs="Lua_haskell.hs"
 DiagScripterHs="DiagScripterMain.hs"
-Executable = "diagnosis"
-LuaScripter = "lua_scripter"
-DiagScripter = "diag_scripter"
+if OS.unix?
+  Executable = "diagnosis"
+  LuaScripter = "lua_scripter"
+  DiagScripter = "diag_scripter"
+else
+  Executable = "diagnosis.exe"
+  LuaScripter = "lua_scripter.exe"
+  DiagScripter = "diag_scripter.exe"
+end
+
 TmpFolder = "tmp"
 #Profiling
 ProfilingExecutable = "for_profiling"

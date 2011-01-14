@@ -18,21 +18,41 @@ function msg2wireFormat(a)
   return s
 end
 function sendMsg(a)
-  print("calling haskell to send message",Diag.tostring(a))
+  --print("calling haskell to send message",Diag.tostring(a))
   local resp = send(msg2wireFormat(a))
-  print("got response",resp)
 	for i=2,string.len(resp) do
 		--print(string.format("0x%x",string.byte(resp,i)))
 	end
   return wireformat2msg(resp)
 end
-function execTest(t)
-	local msg = t.send
-	local resp = sendMsg(msg)
-	if Diag.match(resp,t.expect) then
-		print("success! for ",t.name)
-	else
-		print("FAILURE!!! for ",t.name)
+		
+function execTests(tests)
+	loop(1,tests)
+end
+
+function loop(n,tests)
+	local results = {}
+	results["passed"] = 0
+	results["failed"] = 0
+	for i = 1,n do
+		for i,test in ipairs(tests) do
+			local msg = test.send
+			local resp = sendMsg(msg)
+			if Diag.match(resp,test.expect) then
+				results["passed"] = results["passed"] + 1
+				print("success! for ",test.name)
+			else
+				results["failed"] = results["failed"] + 1
+				print("FAILURE!!! for ",test.name)
+			end
+		end
+		local p = results["passed"]
+		local f = results["failed"]
+		if f>0 then
+			print(string.format("%d test were run, %d succeeded, %d failed",(p+f),p,f))
+		else
+			print(string.format("All tests passed (%d test were run)",p))
+		end
 	end
 end
 
@@ -72,7 +92,4 @@ local function test()
   print("as msg:",Diag.tostring(ms2))
   assert(ms==ms2,"message needs to be the same after conversion-round-trip")
 end
-test()
---dtest = DiagTest.new { name="WRITE_BLOCK_AND_READ_AGAIN_PLAIN", send=Diag.new{0xbf,0x10,0x01,0x0}, expect=Diag.new{0xff,0x10,0x01}, timeout=2000, source=0xf4, target=0x40 }
---print(inspectTest (dtest))
---DIAG [WRITE_BLOCK_AND_READ_AGAIN_PLAIN] SEND [bf,10,01,0] EXPECT [FF,10,01] TIMEOUT [2000] SOURCE [F4] TARGET [40]
+--test()

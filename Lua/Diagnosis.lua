@@ -1,11 +1,17 @@
 print"loading Diagnosis"
+require "Lua/logging2"
+
+logger = logging.new(function(self, level, message)
+                             print(level, message)
+                             return true
+                           end)
+logger:setLevel (logging.WARN)
 Diag = {} 
 DiagTest = {}
 DiagTest.prototype = { target = 0x10 }
 DiagTest.mt={}
 
 function Diag.new(t)
-	print("new")
 	local msg = {}
 	setmetatable(msg,Diag.mt)
 	for i,v in ipairs(t) do
@@ -24,13 +30,10 @@ end
 
 function Diag.tostring(msg)
 	local s = ""
-	local t = {}
   for i,e in ipairs(msg) do
-    t[#t + 1] = e
     s = string.format("%s,0x%x",s,e)
   end
-  print("Diag.tostring",s)
-  --return "{" .. table.concat(t, ", ") .. "}"
+  --print("Diag.tostring",s)
 	return s
 end
 
@@ -53,37 +56,37 @@ function Diag.match(msg,pattern)
 	local result = matching
 	local parseAction = {
 		["*"] = function (v,ppos) 
-			print (string.format("in *, patPos = %d",patPos)) 
+			logger:log(logging.DEBUG, string.format("in *, patPos = %d",patPos))
 			if ppos == #pattern then
-				print("last pattern was star!")
+				logger:log(logging.DEBUG, "last pattern was star!")
 				return last_pattern_is_star
 			end
 			if v == nextChar then
-				print(string.format("in *, next char did match 0x%x",v))
+				logger:log(logging.DEBUG, string.format("in *, next char did match 0x%x",v))
 				return matching,ppos+2,"hex"
 			else
-				print(string.format("in *, wild card match for 0x%x",v))
+				logger:log(logging.DEBUG, string.format("in *, wild card match for 0x%x",v))
 				return matching,ppos,"*"
 			end
 		end,
 		["hex"] = function (v,ppos) 
-			--print (string.format("in hex, ppos = %d, pattern:%s",ppos,pattern[ppos])) 
-			--print ("type of v:",type(v))
+			--logger:log(logging.DEBUG, (string.format("in hex, ppos = %d, pattern:%s",ppos,pattern[ppos])) 
+			--logger:log(logging.DEBUG, ("type of v:",type(v))
 			if (v == pattern[ppos]) then
-				print(string.format ("in hex, got match for 0x%x",v))
+				logger:log(logging.DEBUG, string.format ("in hex, got match for 0x%x",v))
 				return matching,ppos+1,"hex"
 			elseif (pattern[ppos]=="*") then
-				print(string.format("in hex, was wildcard match for 0x%x",v))
+				logger:log(logging.DEBUG, string.format("in hex, was wildcard match for 0x%x",v))
 				return matching,ppos,"*"
 			else
-				--print(string.format("in hex, was nothing for 0x%x, pattern[%d] was %s",v,ppos,pattern[ppos]))
+				--logger:log(logging.DEBUG, string.format("in hex, was nothing for 0x%x, pattern[%d] was %s",v,ppos,pattern[ppos]))
 				return not_matching
 			end
 			return ppos,"",1
 		end
 	}
 	for i,v in ipairs(msg) do
-		--print("checking pair for"..v.." and pat:"..pattern[patPos])
+		--logger:log(logging.DEBUG, "checking pair for"..v.." and pat:"..pattern[patPos])
 		result,patPos,state = parseAction[state](v,patPos)
 		if not(result==matching) then break end
 		nextChar = pattern[patPos+1]

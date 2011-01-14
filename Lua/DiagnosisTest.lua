@@ -1,11 +1,18 @@
 require "lunatest"
 require "Diagnosis"
+require "logging"
 
 m1=Diag.new{0x22,0xF1}
 m2=Diag.new{0x22,0xF1}
 m3=Diag.new{0x31,0xF1}
 m4=Diag.new{0x31,0xF1,0x0}
 m5=Diag.new{0x31,0xF1,0x0,0x1,0x2,0x3,0x4,0x5}
+
+local logger = logging.new(function(self, level, message)
+                             print(level, message)
+                             return true
+                           end)
+logger:setLevel (logging.WARN)
 
 function test_equality()
 	assert_true(m1==m2)
@@ -73,4 +80,7 @@ for i=start,string.len(input) do
 	print(string.format("0x%x",string.byte(input,i)))
 end
 
-lunatest.run()
+--lunatest.run()
+print("logging:")
+logger:log(logging.INFO, "sending email")
+logger:log(logging.WARN, "sending email")
