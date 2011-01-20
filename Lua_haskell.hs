@@ -51,10 +51,11 @@ main = do
 string2hex ::  String -> Word8
 string2hex = fst . head . readHex
 
-hsSend :: Int -> String -> IO String
-hsSend target xs = do
+hsSend :: Int -> Int -> Int -> String -> IO String
+hsSend src target timeout xs = do
+    putStrLn $ "hsSend from " ++ show src ++ " to " ++ show target ++ " (timeout=" ++ show timeout ++ ")"
     let msgx = map (int2Word8 . ord) xs
-    let conf = MkDiagConfig ip 6801 0xf4 (fromIntegral target) False
+    let conf = MkDiagConfig ip 6801 (fromIntegral src) (fromIntegral target) False
     maybeResp <- sendData conf msgx
     let res =  maybe ("error occured! no response arrived")
                 (\resp-> convertToString (diagPayload resp))
