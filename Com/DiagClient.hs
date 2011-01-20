@@ -44,9 +44,9 @@ type Net = ReaderT DiagConnection IO
 -- TODO: use ByteString
 sendData ::  DiagConfig -> [Word8] -> IO (Maybe DiagnosisMessage)
 sendData c xs = do
-  print $ "send to " ++ host c
+  -- print $ "send to " ++ host c
   resp <- sendDiagMsg c $ DiagnosisMessage (string2hex $ source c) (string2hex $ target c) xs
-  print $ show resp
+  -- print $ show resp
   when (isNegativeResponse resp) $ do
     let (Just (DiagnosisMessage _ _ (_:_:err:_))) = resp
     print err
@@ -102,7 +102,6 @@ pushOutMessage :: HSFZMessage -> Net ()
 pushOutMessage msg = do
     h <- asks diagHandle
     log ("--> " ++ show msg)
-    io $ print $ "sending over the wire: " ++ (msg2ints msg)
     io $ hPutStr h (msg2ByteString msg)
     io $ hFlush h -- Make sure that we send data immediately
 
@@ -120,7 +119,7 @@ receiveResponse = do
     dataResp <- receiveDataMsg buf
     io $ free buf
     if responsePending dataResp
-      then (io $ print "...received response pending") >> receiveResponse
+      then (log $ "...received response pending") >> receiveResponse
       else return dataResp
 
 receiveDataMsg ::  Ptr CChar -> Net (Maybe HSFZMessage)

@@ -1,8 +1,7 @@
 import qualified Scripting.Lua as Lua
 import Data.Word
-import Com.DiagClient(sendData,diagPayload,Word8)
+import Com.DiagClient(sendData,diagPayload,DiagConfig(MkDiagConfig))
 import Script.LoggingFramework
-import DiagnosticConfig(conf)
 import Util.Encoding
 import Data.Char
 import Control.Concurrent(threadDelay)
@@ -10,6 +9,9 @@ import Numeric
 import Foreign.C
 import Foreign.Ptr
 import Control.Monad
+
+ip = "10.40.39.13"
+conf = MkDiagConfig ip 6801 "f4" "40" False
 
 dofile :: Lua.LuaState -> String -> IO Int
 dofile s name = do
@@ -31,6 +33,7 @@ main = do
     Lua.registerhsfunction s "sleep" hsSleep
     Lua.registerhsfunction s "showMapping" hsLoggingShow
 
+    dofile s "Lua/connectionConfig.lua"
     dofile s "Lua/base.lua"
     dofile s "Lua/script_send_diag.lua"
 
