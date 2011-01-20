@@ -35,8 +35,8 @@ data DiagConnection = DiagConnection { diagHandle :: Handle, chatty :: Bool }
 data DiagConfig = MkDiagConfig {
   host :: String,
   port :: Int,
-  source :: String,
-  target :: String,
+  source :: Word8,
+  target :: Word8,
   verbose :: Bool
 } deriving (Show)
 
@@ -45,7 +45,7 @@ type Net = ReaderT DiagConnection IO
 sendData ::  DiagConfig -> [Word8] -> IO (Maybe DiagnosisMessage)
 sendData c xs = do
   -- print $ "send to " ++ host c
-  resp <- sendDiagMsg c $ DiagnosisMessage (string2hex $ source c) (string2hex $ target c) xs
+  resp <- sendDiagMsg c $ DiagnosisMessage (source c) (target c) xs
   -- print $ show resp
   when (isNegativeResponse resp) $ do
     let (Just (DiagnosisMessage _ _ (_:_:err:_))) = resp

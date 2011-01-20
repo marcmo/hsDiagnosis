@@ -17,9 +17,9 @@ function msg2wireFormat(a)
   end
   return s
 end
-function sendMsg(a)
+function sendMsg(target,a)
   --print("calling haskell to send message",Diag.tostring(a))
-  local resp = send(msg2wireFormat(a))
+  local resp = send(target,msg2wireFormat(a))
 	for i=2,string.len(resp) do
 		--print(string.format("0x%x",string.byte(resp,i)))
 	end
@@ -37,7 +37,7 @@ function loop(n,tests)
 	for i = 1,n do
 		for i,test in ipairs(tests) do
 			local msg = test.send
-			local resp = sendMsg(msg)
+			local resp = sendMsg(test.target, msg)
 			if Diag.match(resp,test.expect) then
 				results["passed"] = results["passed"] + 1
 				print("success! for ",test.name)

@@ -17,15 +17,15 @@ ip_E = "10.40.39.13"
 ip_F = "10.40.39.49"
 msgTunnelIp = "10.40.39.48"
 
-fem = "40"
-zgw = "10"
-messageTunnel = "10"
+fem = 0x40
+zgw = 0x10
+messageTunnel = 0x10
 
 femConfig = mkConf fem
 zgwConfig = mkConf zgw
 msgTunnelConf = mkConf messageTunnel msgTunnelIp
 
-mkConf :: String -> String -> DiagConfig
-mkConf target ip = MkDiagConfig ip 6801 "f4" target debug_on
+mkConf :: Word8 -> String -> DiagConfig
+mkConf target ip = MkDiagConfig ip 6801 0xf4 target debug_on
 
 

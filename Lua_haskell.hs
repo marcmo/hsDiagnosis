@@ -11,7 +11,6 @@ import Foreign.Ptr
 import Control.Monad
 
 ip = "10.40.39.13"
-conf = MkDiagConfig ip 6801 "f4" "40" False
 
 dofile :: Lua.LuaState -> String -> IO Int
 dofile s name = do
@@ -52,9 +51,10 @@ main = do
 string2hex ::  String -> Word8
 string2hex = fst . head . readHex
 
-hsSend :: String -> IO String
-hsSend xs = do
+hsSend :: Int -> String -> IO String
+hsSend target xs = do
     let msgx = map (int2Word8 . ord) xs
+    let conf = MkDiagConfig ip 6801 0xf4 (fromIntegral target) False
     maybeResp <- sendData conf msgx
     let res =  maybe ("error occured! no response arrived")
                 (\resp-> convertToString (diagPayload resp))
