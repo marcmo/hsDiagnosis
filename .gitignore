@@ -3,3 +3,5 @@ tags
 tmp/
 lua_scripter.exe
 lua_scripter
+luaCTester
+simpleLoader
