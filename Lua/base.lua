@@ -1,5 +1,5 @@
 print("loading base.lua")
-require "Lua/Diagnosis"
+require "Diagnosis"
 
 function wireformat2msg(m)
   assert(type(m)=="string","invalid message format")
@@ -17,9 +17,15 @@ function msg2wireFormat(a)
   end
   return s
 end
+local ipAddress = ""
+function setIp(ip)
+  ipAddress = ip
+  print(ipAddress)
+end
+
 function sendMsg(source,target,timeout,a)
   --print("calling haskell to send message",Diag.tostring(a))
-  local resp = send(source,target,timeout,msg2wireFormat(a))
+  local resp = send(ipAddress,source,target,timeout,msg2wireFormat(a))
 	for i=2,string.len(resp) do
 		--print(string.format("0x%x",string.byte(resp,i)))
 	end
@@ -31,6 +37,7 @@ function execTests(tests)
 end
 
 function loop(n,tests)
+  print("hi")
 	local results = {}
 	results["passed"] = 0
 	results["failed"] = 0

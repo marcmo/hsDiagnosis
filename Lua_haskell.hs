@@ -10,8 +10,6 @@ import Foreign.C
 import Foreign.Ptr
 import Control.Monad
 
-ip = "10.40.39.13"
-
 dofile :: Lua.LuaState -> String -> IO Int
 dofile s name = do
     res <- Lua.loadfile s name
@@ -32,30 +30,28 @@ main = do
     Lua.registerhsfunction s "sleep" hsSleep
     Lua.registerhsfunction s "showMapping" hsLoggingShow
 
-    dofile s "Lua/connectionConfig.lua"
-    dofile s "Lua/base.lua"
-    dofile s "Lua/script_send_diag.lua"
+    dofile s "script_send_diag.lua"
 
-    dostring s (1,1) "return ip_address"
-    ipPresent <- Lua.isnil s (-1)
-    if ipPresent
-      then print "no ip_address defined"
-      else do
-          ip <- Lua.tostring s (-1)
-          print ip
-    Lua.pop s 1
-    d <- Lua.gettop s
-    print $ "top: " ++ show d
+    -- dostring s (1,1) "return ip_address"
+    -- ipPresent <- Lua.isnil s (-1)
+    -- if ipPresent
+    --   then print "no ip_address defined"
+    --   else do
+    --       ip <- Lua.tostring s (-1)
+    --       print ip
+    -- Lua.pop s 1
+    -- d <- Lua.gettop s
+    -- print $ "top: " ++ show d
     Lua.close s
 
 string2hex ::  String -> Word8
 string2hex = fst . head . readHex
 
-hsSend :: Int -> Int -> Int -> String -> IO String
-hsSend src target timeout xs = do
-    putStrLn $ "hsSend from " ++ show src ++ " to " ++ show target ++ " (timeout=" ++ show timeout ++ ")"
+hsSend :: String -> Int -> Int -> Int -> String -> IO String
+hsSend ip2 src target timeout xs = do
+    putStrLn $ "ip was:" ++ ip2 ++ " hsSend from " ++ show src ++ " to " ++ show target ++ " (timeout=" ++ show timeout ++ ")"
     let msgx = map (int2Word8 . ord) xs
-    let conf = MkDiagConfig ip 6801 (fromIntegral src) (fromIntegral target) False
+    let conf = MkDiagConfig ip2 6801 (fromIntegral src) (fromIntegral target) False
     maybeResp <- sendData conf msgx
     let res =  maybe ("error occured! no response arrived")
                 (\resp-> convertToString (diagPayload resp))

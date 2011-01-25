@@ -68,7 +68,9 @@ namespace "lua" do
   task :scripter => [:clean,LuaScripter]
   desc "run lua_scripter"
   task :run => LuaScripter do
-    sh "./#{LuaScripter}"
+    cd "Lua" do
+      sh "../#{LuaScripter}"
+    end
   end
 end
 

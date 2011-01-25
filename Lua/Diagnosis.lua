@@ -1,5 +1,5 @@
 print"loading Diagnosis"
-require "Lua/loggingSupport"
+require "loggingSupport"
 
 logger = logging.new(function(self, level, message)
                              print(level, message)
