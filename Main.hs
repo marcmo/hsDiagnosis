@@ -11,6 +11,7 @@ import Script.LoggingFramework
 import Numeric(showHex,readHex)
 import Util.Encoding
 import Data.Word
+import LuaTester(executeLuaScript)
 import Test.DiagScriptTester(runTestScript)
 import Text.ParserCombinators.Parsec hiding (many, optional, (<|>))
 import Text.Parsec.Token
@@ -19,7 +20,8 @@ import Control.Applicative
 data DiagTool = Diagsend { ip :: String, diagId :: String, message :: String }
               | ReadDtc { dtcKind :: Int }
               | Logging { logIp :: String, enableLogging :: Bool, showLogging :: Bool }
-              | DiagTest { script :: String }
+              | DiagTest { ip :: String, script :: String }
+              | LuaTest { script :: String }
                 deriving (Show, Data, Typeable)
 
 diagSend = Diagsend {ip = "10.40.39.68" &= help "ip address",
@@ -32,7 +34,9 @@ logging = Logging { logIp = "10.40.39.68" &= name "i" &= help "ip address",
                            showLogging = def &= help "show mapping"
                          } &= help "change logging settings"
 
-diagTest = DiagTest { script = def &= help "diagnoser script to run" }
+diagTest = DiagTest { ip = "10.40.39.68" &= help "ip address",
+                      script = def &= help "diagnoser script to run" }
+luaTest = LuaTest { script = def &= help "diagnoser script to run" }
 
 parseTesterId ::  String -> Either ParseError Word8
 parseTesterId = parse hexnumber "(unknown)"
@@ -44,7 +48,7 @@ hexnumber = fst . head . readHex <$> (skipMany (string "0x") *> many1 (hexDigit)
 
 main ::  IO ()
 main = withSocketsDo $ do 
-  actions <- cmdArgs $ ((modes [diagSend,dtc,logging,diagTest]) &= summary "DiagnosisTool 0.2.0, (c) Oliver Mueller 2010") &= verbosity
+  actions <- cmdArgs $ ((modes [diagSend,dtc,logging,diagTest,luaTest]) &= summary "DiagnosisTool 0.2.0, (c) Oliver Mueller 2010") &= verbosity
   execute actions
 
 execute :: DiagTool -> IO ()
@@ -54,12 +58,15 @@ execute (ReadDtc x)
 execute (Logging logIp e m) = do
   when e enable
   when m $ showMappingWithConf conf
-execute (DiagTest s) = do
+execute (DiagTest ip s) = do
     print $ "running script " ++ s
-    runTestScript s
+    runTestScript s ip
+execute (LuaTest s) = do
+    print $ "running lua script " ++ s
+    executeLuaScript s
 execute (Diagsend ip diagid m) = do
   case parseTesterId diagid of
-    (Right tid) ->  do  let config = mkConf (drop 2 $ showAsHex tid) ip
+    (Right tid) ->  do  let config = mkConf tid ip
                         case parseDiagMsg m of
                           (Right msg) -> sendData config msg >> return ()
                           _ -> print "diag message format not correct (use s.th. like 0x22,0xF1)" >> return ()

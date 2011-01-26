@@ -1,7 +1,7 @@
 module Test.DiagScriptTester where
 
 import Test.DiagScriptParser
-import DiagnosticConfig
+import Com.DiagClient(sendData,diagPayload,DiagConfig(MkDiagConfig))
 import Control.Monad
 import Data.Maybe(fromJust)
 import Com.DiagClient
@@ -12,36 +12,36 @@ import qualified Test.HUnit as HUnit
 import Control.Monad.Reader
 import Data.Monoid(mempty)
 
--- run with: runhaskell DiagScriptTester.hs "Script/nvramtest.skr"
+-- run with: runhaskell DiagScriptTester.hs "Script/nvramtest.skr" "10.40.39.68"
 main = do 
-  (f:_) <- getArgs
-  runTestScript f
+  (f:ip:_) <- getArgs
+  runTestScript f ip
 
 -- TODO: implement glob-patterns for matches
 
-runTestScript ::  FilePath -> IO ()
-runTestScript f = do
+runTestScript ::  FilePath -> String -> IO ()
+runTestScript f ip = do
   diagScript <- readFile f
   case parseScript diagScript of 
-    Left err -> do putStrLn "Error parsing diagScript:"
-                   print err
+    Left err -> error $ "Error parsing diagScript:" ++ show err
     Right script -> do
       putStrLn $ "testing " ++ f
-      let scriptTests = extractTests script
+      let scriptTests = extractTests script ip
       TF.defaultMainWithArgs scriptTests []
 
-extractTests ::  DiagScript -> [TF.Test]
-extractTests (DiagScript s) = map extractTest s
+extractTests ::  DiagScript -> String -> [TF.Test]
+extractTests (DiagScript s) ip = map (extractTest ip) s
 
-extractTest :: ScriptElement -> TF.Test
-extractTest (ScriptTestCase t) = testCase (caseName t) ((test2case t) >> return ())
-extractTest (Group n xs) = TF.testGroup n (map extractTest xs)
-extractTest (Loop n cnt xs) =
+extractTest :: String -> ScriptElement -> TF.Test
+extractTest ip (ScriptTestCase t) = testCase (caseName t) ((test2case t ip) >> return ())
+extractTest ip (Group n xs) = TF.testGroup n (map (extractTest ip) xs)
+extractTest ip (Loop n cnt xs) =
   TF.testGroup ("Loop " ++ n ++ " (" ++ show cnt ++ ")") $
-    (join . replicate cnt) (map extractTest xs)
+    (join . replicate cnt) (map (extractTest ip) xs)
 
-test2case ::  TestCase -> IO ()
-test2case (TestCase n msg exp time s t) = do
+test2case ::  TestCase -> String -> IO ()
+test2case (TestCase n msg exp time s t) ip = do
+  let conf = MkDiagConfig ip 6801 s t False
   resp <- sendDataTo conf (diagPayload msg) s t
   -- maybe (return ()) (\m->
   maybe (HUnit.assertString "no response received") (\m->

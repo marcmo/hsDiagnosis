@@ -1,3 +1,5 @@
+module LuaTester where
+
 import qualified Scripting.Lua as Lua
 import Data.Word
 import Com.DiagClient(sendData,diagPayload,DiagConfig(MkDiagConfig))
@@ -64,8 +66,6 @@ executeLuaScript script = do
     -- d <- Lua.gettop s
     -- print $ "top: " ++ show d
     Lua.close s
-
-main = executeLuaScript "script_send_diag.lua"
 
 string2hex ::  String -> Word8
 string2hex = fst . head . readHex

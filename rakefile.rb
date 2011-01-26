@@ -21,11 +21,11 @@ MainHs="Main.hs"
 LuaMainHs="Lua_haskell.hs"
 DiagScripterHs="DiagScripterMain.hs"
 if OS.unix?
-  Executable = "diagnosis"
+  DiagTool = "diagTool"
   LuaScripter = "lua_scripter"
   DiagScripter = "diag_scripter"
 else
-  Executable = "diagnosis.exe"
+  DiagTool = "diagTool.exe"
   LuaScripter = "lua_scripter.exe"
   DiagScripter = "diag_scripter.exe"
 end
@@ -42,7 +42,7 @@ Profiling=TimeProf
 # Profiling=AllocationType
 # Profiling=ConstructorAlloc
 CLEAN.include(TmpFolder,Output,"**/*.o","**/*.hi","dist")
-CLOBBER.include(Executable,DiagScripter,LuaScripter,"#{ProfilingExecutable}*")
+CLOBBER.include(DiagTool,DiagScripter,LuaScripter,"#{ProfilingExecutable}*")
 SrcFiles = FileList.new('**/*.hs')
 
 file DiagScripter => SrcFiles do
@@ -50,17 +50,17 @@ file DiagScripter => SrcFiles do
   sh "ghc -O2 -o #{DiagScripter} -outputdir #{TmpFolder} --make #{DiagScripterHs} -threaded -fforce-recomp"
   stripExec DiagScripter
 end
-file Executable => SrcFiles do
+file DiagTool => SrcFiles do
   puts "building executable..."
-  sh "ghc -O2 -o #{Executable} -outputdir #{TmpFolder} --make #{MainHs} -threaded -fforce-recomp"
-  stripExec Executable
+  sh "ghc -O2 -o #{DiagTool} -outputdir #{TmpFolder} --make #{MainHs} -threaded -fforce-recomp"
+  stripExec DiagTool
 end
 file LuaScripter => SrcFiles do
   puts "building lua-executable..."
   sh "ghc -O2 -o #{LuaScripter} -outputdir #{TmpFolder} --make #{LuaMainHs} -threaded -fforce-recomp"
 end
 desc "build executable"
-task :build => [:clean,Executable]
+task :build => [:clean,DiagTool]
 desc "build diagScripter"
 task :scripter => [:clean,DiagScripter]
 namespace "lua" do
@@ -96,8 +96,8 @@ end
 
 def stripExec (x)
   if OS.unix?
-    sh "strip #{Executable}"
-    sh "upx #{Executable}"
+    sh "strip #{DiagTool}"
+    sh "upx #{DiagTool}"
   end
 end
 desc 'execute nvramtest.skr test files'
