@@ -14,6 +14,7 @@ where
 
 import Com.DiagMessage
 import Com.HSFZMessage
+import Com.DiagBase
 import Diag.DiagnosisCodes
 import Network(PortID(PortNumber),connectTo)
 import System.IO
@@ -28,34 +29,17 @@ import Util.Encoding(string2hex)
 import Debug.Trace
 import Prelude hiding (catch,log)
 
-receiveBufSize = 4096
-pollingMs = 100
-
-data DiagConnection = DiagConnection { diagHandle :: Handle, chatty :: Bool }
-data DiagConfig = MkDiagConfig {
-  host :: String,
-  port :: Int,
-  source :: Word8,
-  target :: Word8,
-  verbose :: Bool
-} deriving (Show)
-
-type Net = ReaderT DiagConnection IO
 -- TODO: use ByteString
 sendData ::  DiagConfig -> [Word8] -> IO (Maybe DiagnosisMessage)
 sendData c xs = do
-  -- print $ "send to " ++ host c
+  print $ "send to " ++ host c
   resp <- sendDiagMsg c $ DiagnosisMessage (source c) (target c) xs
-  -- print $ show resp
+  print $ show resp
   when (isNegativeResponse resp) $ do
     let (Just (DiagnosisMessage _ _ (_:_:err:_))) = resp
     print err
     print $ "negative response: " ++ nameOfError err
   return resp
-
-isNegativeResponse Nothing = False
-isNegativeResponse (Just (DiagnosisMessage _ _ (x:xs))) =
-  x == negative_response_identifier
 
 sendDataTo :: DiagConfig -> [Word8] -> Word8 -> Word8 -> IO (Maybe DiagnosisMessage)
 sendDataTo c xs src target = (sendDiagMsg c . DiagnosisMessage src target) xs
@@ -130,12 +114,6 @@ receiveDataMsg buf = do
     maybe (return Nothing)
       (\m->if isData m then (log "was data!") >> return msg else (log "was no data packet") >> receiveDataMsg buf) msg
 
-responsePending ::  Maybe HSFZMessage -> Bool
-responsePending = 
-  maybe False (\m->
-    let p = diagPayload (hsfz2diag m) in
-      length p == 3 && p!!0 == 0x7f && p!!2 == 0x78)
-
 receiveMsg ::  Ptr CChar -> Net (Maybe HSFZMessage)
 receiveMsg buf = do
     h <- asks diagHandle
@@ -158,10 +136,3 @@ waitForData waitTime_ms = do
           then waitForData (waitTime_ms - pollingMs)
           else return False
 
--- Convenience.
-io :: IO a -> Net a
-io = liftIO
-log ::  (Show a) => a -> Net ()
-log s = do
-    v <- asks chatty
-    when v $ io $ print s

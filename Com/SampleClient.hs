@@ -1,68 +1,90 @@
-import Data.Bits
 import Com.DiagBase
+import Com.DiagMessage
 import Network(PortID(PortNumber),connectTo)
 import Network.Socket
-import Network.BSD
+import Network.BSD(hostAddresses,getHostByName)
 import System.IO
-import Data.List
+import Data.List(genericDrop)
 import Control.Monad (liftM)
+import Control.Applicative((<$>))
+import Control.Exception
+import Foreign(Ptr,Word8,free,mallocBytes)
+import Foreign.C.Types(CChar)
+import Foreign.C.String(peekCStringLen)
+import Text.Printf(printf)
+import Control.Concurrent(putMVar,MVar,forkIO,newEmptyMVar,takeMVar)
 
 data SyslogHandle = 
     SyslogHandle {slSocket :: Socket,
                   slAddress :: SockAddr}
 
 main = do
-  s <- openlog "127.0.0.1" (show diagPort)
-  syslog s "test"
-  closelog s
-  h <- connectTo2 "127.0.0.1" diagPort
-  syslog2 h "test2"
-  closelog2 h
+  -- h <- openlogTcp "127.0.0.1" (show diagPort)
+  h <- connectMe "127.0.0.1" diagPort
+  m <- newEmptyMVar
+  forkIO $ listenForResponse m h
+  pushOutMessage h "echo\n"
+  takeMVar m 
+  hClose h
 
-connectTo2 :: String -> Int -> IO Handle
-connectTo2 host port_ = do
-      let port = toEnum port_
-      sock <- socket AF_INET Stream 0
-      addrs <- liftM hostAddresses $ getHostByName host
-      if null addrs then error $ "no such host : " ++ host else return ()
-      connect sock $ SockAddrInet port (head addrs)
-      handle <- socketToHandle sock ReadWriteMode
-      return handle
+pushOutMessage h msg =
+  syslog2 h msg >> hFlush h
 
-openlog :: HostName -> String -> IO SyslogHandle 
-openlog hostname port =
-    do addrinfos <- getAddrInfo Nothing (Just hostname) (Just port)
+listenForResponse ::  MVar (String) -> Handle -> IO ()
+listenForResponse m h = do
+   msg <- receiveResponse h
+   putMVar m msg
+   return ()
+
+receiveResponse :: Handle -> IO (String)
+receiveResponse h = do
+    buf <- mallocBytes receiveBufSize
+    dataResp <- receiveDataMsg h buf
+    free buf
+    return dataResp
+
+receiveDataMsg ::  Handle -> Ptr CChar -> IO (String)
+receiveDataMsg h buf = receiveMsg h buf 
+
+receiveMsg :: Handle -> Ptr CChar -> IO (String)
+receiveMsg h buf = do
+    dataAvailable <- waitForData h 1000
+    if not dataAvailable then (print "no message available...") >> return ""
+      else do
+        answereBytesRead <- hGetBufNonBlocking h buf receiveBufSize
+        res2 <- peekCStringLen (buf,answereBytesRead)
+        print $ "received over the wire: " ++ (showBinString res2)
+        return $ res2
+
+waitForData :: Handle -> Int -> IO (Bool)
+waitForData h waitTime_ms = do
+  putStr "."
+  inputAvailable <- hWaitForInput h pollingMs
+  if inputAvailable then return True 
+    else if waitTime_ms > 0
+          then waitForData h (waitTime_ms - pollingMs)
+          else return False
+
+
+openlogTcp :: HostName -> String -> IO Handle
+openlogTcp hostname port = do 
+       addrinfos <- getAddrInfo Nothing (Just hostname) (Just port)
        let serveraddr = head addrinfos
-       sock <- socket (addrFamily serveraddr) Datagram defaultProtocol
-       return $ SyslogHandle sock (addrAddress serveraddr)
-
-openlog2 hostname port =
-    do h <- connectTo hostname (PortNumber $ fromIntegral port)
-       hSetBuffering h NoBuffering
-       return h
+       sock <- socket (addrFamily serveraddr) Stream defaultProtocol
+       setSocketOption sock KeepAlive 1
+       connect sock (addrAddress serveraddr)
+       h <- socketToHandle sock WriteMode
+       hSetBuffering h (BlockBuffering Nothing)
+       return $ h
 
 syslog2 :: Handle -> String -> IO ()
 syslog2 h msg = hPutStr h msg >> hFlush h
 
-client = withSocketsDo $ do
-  print "connecting as client..."
-  h <- connectTo2 "localhost" diagPort
-  hGetLine h >>= putStrLn
-  hClose h
-
-syslog :: SyslogHandle -> String -> IO ()
-syslog syslogh msg =
-    sendstr msg
-    where -- Send until everything is done
-          sendstr :: String -> IO ()
-          sendstr [] = return ()
-          sendstr omsg = do sent <- sendTo (slSocket syslogh) omsg
-                                    (slAddress syslogh)
-                            sendstr (genericDrop sent omsg)
-          
-closelog2 = hClose 
-
-closelog :: SyslogHandle -> IO ()
-closelog syslogh = sClose (slSocket syslogh)
-
+connectMe :: HostName -> Int -> IO Handle
+connectMe hostname p = notify $ do
+    h <- connectTo hostname (PortNumber $ fromIntegral p)
+    hSetBuffering h NoBuffering
+    return h
+  where
+    notify =  bracket_ (printf "Connecting to %s ... " hostname >> hFlush stdout) (putStrLn "done.")
 

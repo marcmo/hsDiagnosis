@@ -42,6 +42,7 @@ hsfz2diag hm = DiagnosisMessage (diagBytes!!0) (diagBytes!!1) (drop 2 diagBytes)
 msg2ByteString :: HSFZMessage -> String
 msg2ByteString (HSFZMessage bit len payload) =
   map chr $ encodeLength len ++ [0,control2Int bit] ++ (map word8ToInt payload)
+
 msg2ints :: HSFZMessage -> String
 msg2ints (HSFZMessage bit len payload) = 
   showAsHexNumbers $ encodeLength len ++ [0,control2Int bit] ++ (map word8ToInt payload)

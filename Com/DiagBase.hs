@@ -40,6 +40,13 @@ isNegativeResponse (Just (DiagnosisMessage _ _ (x:xs))) =
 
 liftReader a = ReaderT (return . runReader a)
 
+responsePending ::  Maybe HSFZMessage -> Bool
+responsePending = 
+  maybe False (\m->
+    let p = diagPayload (hsfz2diag m) in
+      length p == 3 && p!!0 == 0x7f && p!!2 == 0x78)
+
+
 -- Convenience.
 io :: IO a -> Net a
 io = liftIO

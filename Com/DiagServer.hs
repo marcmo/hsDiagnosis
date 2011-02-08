@@ -1,61 +1,93 @@
 module Com.DiagServer where
 
-import Com.DiagMessage
-import Com.HSFZMessage
-import Com.DiagBase
-import Data.Bits
-import Network.Socket
-import Network.BSD
--- import Network(PortID(PortNumber),listenOn)
-import Data.List
-import Control.Exception
-import Text.Printf(printf)
+import Network (listenOn, withSocketsDo, accept, PortID(..), Socket)
+import qualified Network.Socket as NS
+import System (getArgs)
+import System.IO (hSetBuffering, hGetLine, hPutStrLn, BufferMode(..), Handle)
+import Control.Concurrent (forkIO)
+import Control.Concurrent.MVar
+import System.IO (hSetBuffering, hGetLine, hPutStrLn, BufferMode(..), Handle)
+import IO
+
+type HandlerFunc = NS.SockAddr -> String -> IO ()
+
+main :: IO ()
+main = withSocketsDo $ do
+    args <- getArgs
+    let port = fromIntegral (read $ head args :: Int)
+    sock <- listenOn $ PortNumber port
+    putStrLn $ "Listening on " ++ (head args)
+    sockHandler sock
+
+sockHandler :: Socket -> IO ()
+sockHandler sock = do
+    (handle, _, _) <- accept sock
+    hSetBuffering handle NoBuffering
+    forkIO $ commandProcessor handle
+    sockHandler sock
+
+commandProcessor :: Handle -> IO ()
+commandProcessor handle = do
+    line <- hGetLine handle
+    let cmd = words line
+    print cmd
+    case (head cmd) of
+        ("echo") -> print "was echo" >> echoCommand handle cmd
+        ("add") -> addCommand handle cmd
+        _ -> do print "s.th. else..." >> hPutStrLn handle "Unknown command"
+    commandProcessor handle
+
+echoCommand :: Handle -> [String] -> IO ()
+echoCommand handle cmd = do
+    hPutStrLn handle (unwords $ tail cmd)
+
+addCommand :: Handle -> [String] -> IO ()
+addCommand handle cmd = do
+    hPutStrLn handle $ show $ (read $ cmd !! 1) + (read $ cmd !! 2)
 
 
-type HandlerFunc = SockAddr -> String -> IO ()
-
-main = serveDiagnosis plainHandler
-serveDiagnosis :: HandlerFunc -> IO ()
-serveDiagnosis handlerfunc = withSocketsDo $
-    do let c = MkDiagConfig "localhost" 6801 0xf4 0x40 True
-       sock <- connectMe c
-       procMessages sock
-    where procMessages sock =
-              do (msg, _, addr) <- recvFrom sock 1024
-                 handlerfunc addr msg
-                 procMessages sock
-
--- A simple handler that prints incoming packets
-plainHandler :: HandlerFunc
-plainHandler addr msg = 
-    putStrLn $ "From " ++ show addr ++ ": " ++ msg
-
-
-connectMe :: DiagConfig -> IO Socket
-connectMe c = notify $ con c
-  where
-    notify
-      | verbose c = bracket_ (printf "Connecting to %s ... " (host c)) (putStrLn "done.")
-      | otherwise = bracket_ (return ()) (return ())
-
-
-con c =
-   do addrinfos <- getAddrInfo
-                    (Just (defaultHints {addrFlags = [AI_PASSIVE]}))
-                    Nothing (Just $ show $ port c)
-      let serveraddr = head addrinfos
-      sock <- socket (addrFamily serveraddr) Datagram defaultProtocol
-      setSocketOption sock KeepAlive 1
-      bindSocket sock (addrAddress serveraddr)
-      print $ "listening on port:" ++ show diagPort ++ ", serveraddr:" ++ show (head addrinfos)
-      return sock
-
-con2 c = 
-    do addrinfos <- getAddrInfo 
-                    (Just (defaultHints {addrFlags = [AI_PASSIVE]}))
-                    Nothing (Just (show diagPort))
+-- plainHandler :: HandlerFunc
+-- plainHandler addr msg = 
+--     putStrLn $ "From " ++ show addr ++ ": " ++ msg
+-- 
+serveDiagnosis :: String -> HandlerFunc -> IO ()
+serveDiagnosis port handlerfunc = withSocketsDo $
+    do addrinfos <- NS.getAddrInfo 
+                    (Just (NS.defaultHints {NS.addrFlags = [NS.AI_PASSIVE]}))
+                    Nothing (Just port)
        let serveraddr = head addrinfos
-       sock <- socket (addrFamily serveraddr) Datagram defaultProtocol
-       bindSocket sock (addrAddress serveraddr)
-       print $ "listening on port:" ++ show diagPort ++ ", serveraddr:" ++ show (head addrinfos)
-       return sock
+       sock <- NS.socket (NS.addrFamily serveraddr) NS.Stream NS.defaultProtocol
+       NS.bindSocket sock (NS.addrAddress serveraddr)
+       NS.listen sock 5
+       lock <- newMVar ()
+       procRequests lock sock
+
+    where
+          procRequests :: MVar () -> Socket -> IO ()
+          procRequests lock mastersock = 
+              do (connsock, clientaddr) <- NS.accept mastersock
+                 handle lock clientaddr
+                    "syslogtcpserver.hs: client connnected"
+                 forkIO $ procMessages lock connsock clientaddr
+                 procRequests lock mastersock
+
+          -- | Process incoming messages
+          procMessages :: MVar () -> Socket -> NS.SockAddr -> IO ()
+          procMessages lock connsock clientaddr =
+              do connhdl <- NS.socketToHandle connsock ReadWriteMode
+                 hSetBuffering connhdl NoBuffering
+                 messages <- hGetContents connhdl
+                 print "sending back..."
+                 hPutStrLn connhdl "just an answere..." >> hFlush connhdl 
+                 mapM_ (handle lock clientaddr) (lines messages)
+                 print "closing..."
+                 hClose connhdl
+                 handle lock clientaddr 
+                    "syslogtcpserver.hs: client disconnected"
+
+          -- Lock the handler before passing data to it.
+          handle :: MVar () -> NS.SockAddr -> String -> IO ()
+          handle lock clientaddr msg =
+              withMVar lock 
+                 (\a -> handlerfunc clientaddr msg >> return a)
+
