@@ -36,22 +36,25 @@ function execTests(tests)
 	loop(1,tests)
 end
 
+function executeTest(test)
+    local msg = test.send
+    local resp = sendMsg(test.source, test.target, test.timeout, msg)
+    return Diag.match(resp,test.expect)
+end
+
 function loop(n,tests)
-  print("hi")
 	local results = {}
 	results["passed"] = 0
 	results["failed"] = 0
 	for i = 1,n do
 		for i,test in ipairs(tests) do
-			local msg = test.send
-			local resp = sendMsg(test.source, test.target, test.timeout, msg)
-			if Diag.match(resp,test.expect) then
-				results["passed"] = results["passed"] + 1
-				print("success! for ",test.name)
-			else
-				results["failed"] = results["failed"] + 1
-				print("FAILURE!!! for ",test.name)
-			end
+			if (executeTest(test)) then
+        results["passed"] = results["passed"] + 1
+        print("success! for ",test.name)
+      else
+        results["failed"] = results["failed"] + 1
+        print("FAILURE!!! for ",test.name)
+      end
 		end
 		local p = results["passed"]
 		local f = results["failed"]

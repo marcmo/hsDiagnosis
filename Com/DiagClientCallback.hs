@@ -1,19 +1,9 @@
 {-# LANGUAGE ScopedTypeVariables #-}
-module Com.DiagClient
-    (
-      module Com.DiagMessage,
-      sendBytes,
-      sendDiagMsg,
-      sendData,
-      sendDataTo,
-      string2hex,
-      Word8,
-      DiagConfig(..)
-    )    
-where
+module Com.DiagClientCallback where
 
 import Com.DiagMessage
 import Com.HSFZMessage
+import Com.DiagBase
 import Diag.DiagnosisCodes
 import Network(PortID(PortNumber),connectTo)
 import System.IO
@@ -25,57 +15,38 @@ import Control.Monad.Reader
 import Control.Exception
 import Text.Printf(printf)
 import Util.Encoding(string2hex)
+import Maybe(isJust)
+import Control.Applicative((<$>))
 import Debug.Trace
 import Prelude hiding (catch,log)
 
-receiveBufSize = 4096
-pollingMs = 100
+main = sendData c callback []
+    where callback resp = when (isNegativeResponse resp) $ do
+                  let (Just (DiagnosisMessage _ _ (_:_:err:_))) = resp
+                  print err
+                  print $ "negative response: " ++ nameOfError err
+          -- c = MkDiagConfig "10.40.39.19" 6801 0xf4 0x40 True
+          c = MkDiagConfig "localhost" 6801 0xf4 0x40 True
+sendData ::  DiagConfig -> Callback -> [Word8] -> IO ()
+sendData c cb xs = do
+  sendDiagMsg c cb $ DiagnosisMessage (source c) (target c) xs
 
-data DiagConnection = DiagConnection { diagHandle :: Handle, chatty :: Bool }
-data DiagConfig = MkDiagConfig {
-  host :: String,
-  port :: Int,
-  source :: Word8,
-  target :: Word8,
-  verbose :: Bool
-} deriving (Show)
+sendDataTo :: DiagConfig -> Callback -> [Word8] -> Word8 -> Word8 -> IO ()
+sendDataTo c cb xs src target = (sendDiagMsg c cb . DiagnosisMessage src target) xs
 
-type Net = ReaderT DiagConnection IO
--- TODO: use ByteString
-sendData ::  DiagConfig -> [Word8] -> IO (Maybe DiagnosisMessage)
-sendData c xs = do
-  -- print $ "send to " ++ host c
-  resp <- sendDiagMsg c $ DiagnosisMessage (source c) (target c) xs
-  -- print $ show resp
-  when (isNegativeResponse resp) $ do
-    let (Just (DiagnosisMessage _ _ (_:_:err:_))) = resp
-    print err
-    print $ "negative response: " ++ nameOfError err
-  return resp
+sendDiagMsg :: DiagConfig -> Callback -> DiagnosisMessage -> IO ()
+sendDiagMsg c callback dm = do
+    let hsfzMsg = diag2hsfz dm DataBit
+    sendMessage c callback hsfzMsg
 
-isNegativeResponse Nothing = False
-isNegativeResponse (Just (DiagnosisMessage _ _ (x:xs))) =
-  x == negative_response_identifier
-
-sendDataTo :: DiagConfig -> [Word8] -> Word8 -> Word8 -> IO (Maybe DiagnosisMessage)
-sendDataTo c xs src target = (sendDiagMsg c . DiagnosisMessage src target) xs
-
-sendMessage :: DiagConfig -> HSFZMessage -> IO (Maybe HSFZMessage)
-sendMessage c msg = bracket (diagConnect c) disconnect loop
+sendMessage :: DiagConfig -> Callback -> HSFZMessage -> IO ()
+sendMessage c callback msg = bracket (connect c) disconnect loop
   where
     disconnect = hClose . diagHandle
-    loop st    = catch (runReaderT (run msg) st) (\(_ :: IOException) -> return Nothing)
-
-sendBytes :: DiagConfig -> [Word8] -> IO (Maybe HSFZMessage)
-sendBytes c = sendMessage c . dataMessage
-sendDiagMsg :: DiagConfig -> DiagnosisMessage -> IO (Maybe DiagnosisMessage)
-sendDiagMsg c dm = do
-    let hsfzMsg = diag2hsfz dm DataBit
-    hsfzResp <- sendMessage c hsfzMsg
-    return $ maybe Nothing (Just . hsfz2diag) hsfzResp
+    loop st    = catch (runReaderT (run msg callback) st) (\(_ :: IOException) -> return ())
  
-diagConnect :: DiagConfig -> IO DiagConnection
-diagConnect c = notify $ do
+connect :: DiagConfig -> IO DiagConnection
+connect c = notify $ do
     -- addrinfos <- getAddrInfo Nothing (Just $ host c) (Just $ port c)
     -- let serveraddr = head addrinfos
     -- sock <- socket (addrFamily serveraddr) Stream defaultProtocol
@@ -90,13 +61,17 @@ diagConnect c = notify $ do
       | verbose c = bracket_ (printf "Connecting to %s ... " (host c) >> hFlush stdout) (putStrLn "done.")
       | otherwise = bracket_ (return ()) (return ())
 
-run :: HSFZMessage -> Net (Maybe HSFZMessage)
-run msg = do
+run :: HSFZMessage -> Callback-> Net ()
+run msg cb = do
     m <- io newEmptyMVar
-    ReaderT $ \r ->
-      forkIO $ runReaderT (listenForResponse m) r
-    pushOutMessage msg
-    io $ takeMVar m 
+    listenInThread m
+      where listenInThread m = do
+                ReaderT $ \r ->
+                    forkIO $ runReaderT (listenForResponse m) r
+                pushOutMessage msg
+                resp <- io $ takeMVar m 
+                io $ cb (hsfz2diag <$> resp)
+                listenInThread m
 
 pushOutMessage :: HSFZMessage -> Net ()
 pushOutMessage msg = do
@@ -104,8 +79,6 @@ pushOutMessage msg = do
     log ("--> " ++ show msg)
     io $ hPutStr h (msg2ByteString msg)
     io $ hFlush h -- Make sure that we send data immediately
-
-liftReader a = ReaderT (return . runReader a)
 
 listenForResponse ::  MVar (Maybe HSFZMessage) -> Net ()
 listenForResponse m = do
@@ -158,10 +131,3 @@ waitForData waitTime_ms = do
           then waitForData (waitTime_ms - pollingMs)
           else return False
 
--- Convenience.
-io :: IO a -> Net a
-io = liftIO
-log ::  (Show a) => a -> Net ()
-log s = do
-    v <- asks chatty
-    when v $ io $ print s

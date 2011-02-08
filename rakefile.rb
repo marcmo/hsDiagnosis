@@ -18,10 +18,10 @@ module OS
 end
 
 MainHs="Main.hs"
-LuaMainHs="Lua_haskell.hs"
+LuaMainHs="LuaMain.hs"
 DiagScripterHs="DiagScripterMain.hs"
 if OS.unix?
-  DiagTool = "diagTool"
+  DiagTool = "diagtool"
   LuaScripter = "lua_scripter"
   DiagScripter = "diag_scripter"
 else

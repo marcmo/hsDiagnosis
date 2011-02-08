@@ -36,7 +36,7 @@ logging = Logging { logIp = "10.40.39.68" &= name "i" &= help "ip address",
 
 diagTest = DiagTest { ip = "10.40.39.68" &= help "ip address",
                       script = def &= help "diagnoser script to run" }
-luaTest = LuaTest { script = def &= help "diagnoser script to run" }
+luaTest = LuaTest { script = def &= help "lua script to run" }
 
 parseTesterId ::  String -> Either ParseError Word8
 parseTesterId = parse hexnumber "(unknown)"
@@ -48,7 +48,7 @@ hexnumber = fst . head . readHex <$> (skipMany (string "0x") *> many1 (hexDigit)
 
 main ::  IO ()
 main = withSocketsDo $ do 
-  actions <- cmdArgs $ ((modes [diagSend,dtc,logging,diagTest,luaTest]) &= summary "DiagnosisTool 0.2.0, (c) Oliver Mueller 2010") &= verbosity
+  actions <- cmdArgs $ ((modes [diagSend,dtc,logging,diagTest,luaTest]) &= summary "DiagnosisTool 0.3.0, (c) Oliver Mueller 2010") &= verbosity
   execute actions
 
 execute :: DiagTool -> IO ()

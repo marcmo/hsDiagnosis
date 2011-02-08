@@ -50,7 +50,7 @@ executeLuaScript script = do
     Lua.openlibs s
  
     Lua.registerhsfunction s "send" hsSend
-    Lua.registerhsfunction s "sleep" hsSleep
+    Lua.registerhsfunction s "wait" hsSleep
     Lua.registerhsfunction s "showMapping" hsLoggingShow
 
     dofile s script
