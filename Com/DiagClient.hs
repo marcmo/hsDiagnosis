@@ -47,6 +47,7 @@ sendDataTo c xs src target = (sendDiagMsg c . DiagnosisMessage src target) xs
 
 sendBytes :: DiagConfig -> [Word8] -> IO (Maybe HSFZMessage)
 sendBytes c = sendMessage c . dataMessage
+
 sendDiagMsg :: DiagConfig -> DiagnosisMessage -> IO (Maybe DiagnosisMessage)
 sendDiagMsg c dm = do
     let hsfzMsg = diag2hsfz dm DataBit
@@ -54,23 +55,20 @@ sendDiagMsg c dm = do
     return $ maybe Nothing (Just . hsfz2diag) hsfzResp
 
 sendMessage :: DiagConfig -> HSFZMessage -> IO (Maybe HSFZMessage)
-sendMessage c msg = bracket (diagConnect c) disconnect loop
+sendMessage c msg = bracket diagConnect disconnect loop
   where
     disconnect = hClose . diagHandle
     loop st    = catch (runReaderT (run msg) st) (\(_ :: IOException) -> return Nothing)
- 
-diagConnect :: DiagConfig -> IO DiagConnection
-diagConnect c = notify $ do
-    -- addrinfos <- getAddrInfo Nothing (Just $ host c) (Just $ port c)
-    -- let serveraddr = head addrinfos
-    -- sock <- socket (addrFamily serveraddr) Stream defaultProtocol
-    -- setSocketOption sock KeepAlive 1
-    -- connect sock (addrAddress serveraddr)
-    -- h <- socketToHandle sock ReadWriteMode
-    h <- connectTo (host c) (PortNumber $ fromIntegral (port c))
-    hSetBuffering h NoBuffering
-    return (DiagConnection h (verbose c))
-  where
+    diagConnect = notify $ do
+        -- addrinfos <- getAddrInfo Nothing (Just $ host c) (Just $ port c)
+        -- let serveraddr = head addrinfos
+        -- sock <- socket (addrFamily serveraddr) Stream defaultProtocol
+        -- setSocketOption sock KeepAlive 1
+        -- connect sock (addrAddress serveraddr)
+        -- h <- socketToHandle sock ReadWriteMode
+        h <- connectTo (host c) (PortNumber $ fromIntegral (port c))
+        hSetBuffering h NoBuffering
+        return (DiagConnection h (verbose c))
     notify
       | verbose c = bracket_ (printf "Connecting to %s ... " (host c) >> hFlush stdout) (putStrLn "done.")
       | otherwise = bracket_ (return ()) (return ())

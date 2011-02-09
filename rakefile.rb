@@ -31,18 +31,11 @@ else
 end
 
 TmpFolder = "tmp"
-#Profiling
-ProfilingExecutable = "for_profiling"
 TimeProf="+RTS -p -K100M"      
 StandardHeap="+RTS -hc -p -K100M" 
 AllocationType="+RTS -hy -p -K100M" 
 ConstructorAlloc="+RTS -hd -p -K100M" 
-Profiling=TimeProf
-# Profiling=StandardHeap
-# Profiling=AllocationType
-# Profiling=ConstructorAlloc
 CLEAN.include(TmpFolder,Output,"**/*.o","**/*.hi","dist")
-CLOBBER.include(DiagTool,DiagScripter,LuaScripter,"#{ProfilingExecutable}*")
 SrcFiles = FileList.new('**/*.hs')
 
 file DiagScripter => SrcFiles do
@@ -59,10 +52,13 @@ file LuaScripter => SrcFiles do
   puts "building lua-executable..."
   sh "ghc -O2 -o #{LuaScripter} -outputdir #{TmpFolder} --make #{LuaMainHs} -threaded -fforce-recomp"
 end
+
 desc "build executable"
 task :build => [:clean,DiagTool]
+
 desc "build diagScripter"
 task :scripter => [:clean,DiagScripter]
+
 namespace "lua" do
   desc "build luaScripter"
   task :scripter => [:clean,LuaScripter]
@@ -74,24 +70,9 @@ namespace "lua" do
   end
 end
 
-file ProfilingExecutable => SrcFiles do
-  sh "ghc -O2 -o #{ProfilingExecutable} -outputdir #{TmpFolder} --make #{MainHs} -prof -auto-all -caf-all -fforce-recomp"
-end
-
 desc "run all quickCheck testcases"
 task :test do
-  sh 'runhaskell Test/tests.hs'
-end
-
-desc "profiling"
-task :prof => [:clean,ProfilingExecutable] do
-  benchmark = Benchmark.realtime do
-    sh "time ./#{ProfilingExecutable} profilinginput #{Output} #{Profiling}"
-  end
-  puts "computing step took: " + sprintf("%.2f", benchmark)
-  if Profiling!=TimeProf
-    sh "hp2ps -e8in -c #{ProfilingExecutable}.hp"
-  end
+  sh 'runhaskell tests/testHSFZ.hs'
 end
 
 def stripExec (x)

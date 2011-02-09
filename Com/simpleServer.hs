@@ -6,6 +6,7 @@ import Network.Socket hiding (recv)
 import qualified Data.ByteString as S
 import Network.Socket.ByteString (recv, sendAll)
 import Com.DiagMessage
+import Com.HSFZMessage
 
 main :: IO ()
 main = withSocketsDo $
@@ -30,5 +31,13 @@ main = withSocketsDo $
              putStrLn "now we are talking..."
              msg <- recv conn 1024
              let hsfzMsg = bytes2msg msg
-             unless (S.null msg) $ sendAll conn msg >> print msg >> talk conn
+             unless (S.null msg) $ do
+              sendAll conn $ replyTo hsfzMsg
+              print $ "received over the wire: " ++ (showBinString msg)
+              print hsfzMsg
+              talk conn
+      replyTo :: Maybe HSFZMessage -> S.ByteString
+      replyTo (Just m) = undefined
+      replyTo _ = 
+        where dmsg = DiagnosisMessage (source c) (target c) xs
 
