@@ -54,3 +54,5 @@ log ::  (Show a) => a -> Net ()
 log s = do
     v <- asks chatty
     when v $ io $ print s
+
+

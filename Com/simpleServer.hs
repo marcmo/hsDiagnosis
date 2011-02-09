@@ -4,8 +4,7 @@ module Main where
 import Control.Monad (unless)
 import Network.Socket hiding (recv)
 import qualified Data.ByteString as S
-import Network.Socket(recv, send)
--- import Network.Socket.ByteString (recv, sendAll)
+import Network.Socket.ByteString (recv, sendAll)
 import Com.DiagMessage
 
 main :: IO ()
@@ -31,6 +30,5 @@ main = withSocketsDo $
              putStrLn "now we are talking..."
              msg <- recv conn 1024
              let hsfzMsg = bytes2msg msg
-             unless (null msg) $ send conn msg >> print msg >> talk conn
-             -- unless (S.null msg) $ sendAll conn msg >> print msg >> talk conn
+             unless (S.null msg) $ sendAll conn msg >> print msg >> talk conn
 

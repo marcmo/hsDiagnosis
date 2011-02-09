@@ -8,8 +8,8 @@ import Util.Encoding
 import Debug.Trace
 
 data ControlBit = AckBit | DataBit deriving (Show,Eq)
-control2Int DataBit = 1
-control2Int AckBit = 2
+control2Int DataBit = 1 :: Word8
+control2Int AckBit = 2 :: Word8
 int2control 1 = DataBit
 int2control 2 = AckBit
 int2control x = (trace $ "int2control not defined for: " ++ show x) undefined

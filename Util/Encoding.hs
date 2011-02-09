@@ -15,12 +15,12 @@ encodeInt :: (Integral a, Bits a) => a -> Int -> [Word8]
 encodeInt n width = 
             [int2Word8 $ 0xFF .&. (n `shiftR` s) | s <- reverse $ take width [0,8..]]
 
-encodeLength :: Int -> [Int]
+encodeLength :: Int -> [Word8]
 encodeLength len =
-            [0xFF .&. (len `shiftR` 24)
-            ,0xFF .&. (len `shiftR` 16)
-            ,0xFF .&. (len `shiftR` 8)
-            ,0xFF .&. (len `shiftR` 0)]
+            [0xFF .&. int2Word8 (len `shiftR` 24)
+            ,0xFF .&. int2Word8 (len `shiftR` 16)
+            ,0xFF .&. int2Word8 (len `shiftR` 8)
+            ,0xFF .&. int2Word8 (len `shiftR` 0)]
 
 -- decodeLength :: [Word8] -> Word32
 -- decodeLength xs 
