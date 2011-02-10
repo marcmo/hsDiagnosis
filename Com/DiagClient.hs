@@ -114,7 +114,7 @@ listenForResponse m =
             then (log "was data!") >> return msg
             else (log "was no data packet") >> receiveDataMsg buf) msg
 
-    receiveMsg ::  Ptr CChar -> Net (Maybe HSFZMessage)
+    receiveMsg :: Ptr CChar -> Net (Maybe HSFZMessage)
     receiveMsg buf = do
         h <- asks diagHandle
         dataAvailable <- waitForData diagTimeout
@@ -123,7 +123,10 @@ listenForResponse m =
             answereBytesRead <- io $ hGetBufNonBlocking h buf receiveBufSize
             res2 <- io $ S.packCStringLen (buf,answereBytesRead)
             log $ "received over the wire: " ++ (showBinString res2)
-            return $ bytes2msg res2
+            let resp = bytes2msg res2
+            log $ "received over the wire(msg): " ++ (show resp)
+            return resp
+            -- return $ bytes2msg res2
 
     waitForData ::  Int -> Net (Bool)
     waitForData waitTime_ms = do

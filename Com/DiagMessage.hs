@@ -45,9 +45,8 @@ hsfz2diag hm = DiagnosisMessage (diagBytes!!0) (diagBytes!!1) (drop 2 diagBytes)
 showAsHexNumbers :: [Word8] -> String
 showAsHexNumbers xs = concat $ intersperse "," $ map (showAsHex . int2Word8) xs
 
--- showBinString xs = let ys = map (ord) xs in
-showBinString xs = let ys = S.unpack xs in
-  showAsHexNumbers ys
+showBinString ::  B.ByteString -> String
+showBinString xs = showAsHexNumbers $ S.unpack xs
 
 nothingIf ::  Bool -> Maybe Int
 nothingIf True = Nothing

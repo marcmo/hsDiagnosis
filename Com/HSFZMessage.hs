@@ -4,12 +4,12 @@ where
 
 import Data.Word(Word8)
 import Data.List(intersperse)
-import Util.Encoding
+import Util.Encoding(showAsHexString)
 import qualified Data.ByteString as S
 import qualified Data.ByteString.Lazy as L
-import Data.Binary.Get
-import Data.Binary.Put
-import Data.Binary
+import Data.Serialize.Get
+import Data.Serialize.Put
+import Data.Serialize
 import Debug.Trace
 
 headerLen = 6
@@ -29,7 +29,7 @@ data HSFZMessage = HSFZMessage {
 
 instance Show HSFZMessage where
   show (HSFZMessage _ _ xs) = showAsHexString xs
-instance Binary HSFZMessage where
+instance Serialize HSFZMessage where
   put m = do
     putWord32be $ fromIntegral $ payloadLen m
     putWord8 0
@@ -51,19 +51,17 @@ isAck m = controllBit m == AckBit
 isData = not . isAck
 
 msg2ByteString :: HSFZMessage -> S.ByteString
-msg2ByteString m@(HSFZMessage bit len payload) =
-  strict $ runPut $ put m
+msg2ByteString = runPut . put
 
 bytes2msg :: S.ByteString -> Maybe HSFZMessage
-bytes2msg s = 
-  if (S.length s < headerLen) || (S.length s /= headerLen + payloadLength)
-    then Nothing
-    else Just $ runGet get (strictToLazy s)
+bytes2msg s
+  | invalid = (error $ "was invalid message: "++(show s))Nothing
+  | otherwise = either (const Nothing) Just (runGet get s)
       where payloadLength = parseLength s
+            invalid = (S.length s < headerLen) || (S.length s /= headerLen + payloadLength)
 
 parseLength :: S.ByteString -> Int
-parseLength s = fromIntegral len
-  where (len,_,_) = runGetState getWord32be (strictToLazy s) 0
+parseLength s = either (const 0) fromIntegral $ runGet getWord32be s
 
 strictToLazy :: S.ByteString -> L.ByteString
 strictToLazy = L.fromChunks . return

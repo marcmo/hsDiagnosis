@@ -53,7 +53,7 @@ receiveMsg h buf = do
       else do
         answereBytesRead <- hGetBufNonBlocking h buf receiveBufSize
         res2 <- peekCStringLen (buf,answereBytesRead)
-        print $ "received over the wire: " ++ (showBinString res2)
+        print $ "received over the wire: " ++ res2
         return $ res2
 
 waitForData :: Handle -> Int -> IO (Bool)

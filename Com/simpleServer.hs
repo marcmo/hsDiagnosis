@@ -26,18 +26,25 @@ main = withSocketsDo $
         loop s
         -- sClose conn
         -- sClose sock
+
       talk :: Socket -> IO ()
       talk conn = do 
              putStrLn "now we are talking..."
              msg <- recv conn 1024
+             print msg
              let hsfzMsg = bytes2msg msg
+             print hsfzMsg
              unless (S.null msg) $ do
               sendAll conn $ replyTo hsfzMsg
               print $ "received over the wire: " ++ (showBinString msg)
               print hsfzMsg
               talk conn
       replyTo :: Maybe HSFZMessage -> S.ByteString
-      replyTo (Just m) = undefined
-      replyTo _ = 
-        where dmsg = DiagnosisMessage (source c) (target c) xs
+      replyTo (Just m) = msg2ByteString responseHsfz
+        where dmsg = hsfz2diag m
+              payload = diagPayload dmsg
+              responsePayload = (head payload + 0x40):(tail payload)
+              response = DiagnosisMessage (diagTarget dmsg) (diagSource dmsg) responsePayload
+              responseHsfz = diag2hsfz response DataBit
+      replyTo _ = error "not a valid message"
 
