@@ -6,10 +6,6 @@ import Text.Regex(splitRegex,mkRegex)
 import Numeric(showHex,readHex)
 import Data.Char(chr,ord)
 import Data.Word(Word8)
-import qualified Data.ByteString as S
-import qualified Data.ByteString.Lazy as BL
-import qualified Data.ByteString.Lazy.Char8 as LB
-import qualified Data.ByteString.Char8 as B
 import Util.Encoding
 import Debug.Trace
 import Com.HSFZMessage
@@ -42,16 +38,4 @@ hsfz2diag ::  HSFZMessage -> DiagnosisMessage
 hsfz2diag hm = DiagnosisMessage (diagBytes!!0) (diagBytes!!1) (drop 2 diagBytes)
   where diagBytes = payload hm
 
-showAsHexNumbers :: [Word8] -> String
-showAsHexNumbers xs = concat $ intersperse "," $ map (showAsHex . int2Word8) xs
-
-showBinString ::  B.ByteString -> String
-showBinString xs = showAsHexNumbers $ S.unpack xs
-
-nothingIf ::  Bool -> Maybe Int
-nothingIf True = Nothing
-nothingIf False = Just 0
-
-convert :: String -> Char
-convert = chr . fst . head . readHex
 

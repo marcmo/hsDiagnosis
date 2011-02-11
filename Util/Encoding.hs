@@ -7,6 +7,8 @@ import Data.Word
 import Data.Bits
 import Numeric
 import Data.List
+import qualified Data.ByteString.Char8 as B
+import qualified Data.ByteString as S
 
 int2Word8 x = fromIntegral x :: Word8
 word8ToInt x = fromIntegral x :: Int
@@ -21,14 +23,6 @@ encodeLength len =
             ,0xFF .&. int2Word8 (len `shiftR` 16)
             ,0xFF .&. int2Word8 (len `shiftR` 8)
             ,0xFF .&. int2Word8 (len `shiftR` 0)]
-
--- decodeLength :: [Word8] -> Word32
--- decodeLength xs 
---   | length xs < 4 = error "insufficient length for decoding"
---   | otherwise =  (xs!!3) .|. 
---                 ((xs!!2) `shiftL` 8)  .|. 
---                 ((xs!!1) `shiftL` 16) .|. 
---                 ((xs!!0) `shiftL` 24)  
 
 string2hex ::  String -> Word8
 string2hex = fst . head . readHex
@@ -51,3 +45,17 @@ showAsHexString bs = '[':(intercalate "," $ map (showAsHex) bs) ++ "]"
 showAsBin :: Word8 -> String
 showAsBin = flip showBin ""
   where showBin = showIntAtBase 2 intToDigit
+
+showBinString ::  B.ByteString -> String
+showBinString xs = showAsHexNumbers $ S.unpack xs
+
+showAsHexNumbers :: [Word8] -> String
+showAsHexNumbers xs = concat $ intersperse "," $ map (showAsHex . int2Word8) xs
+
+nothingIf ::  Bool -> Maybe Int
+nothingIf True = Nothing
+nothingIf False = Just 0
+
+convert :: String -> Char
+convert = chr . fst . head . readHex
+

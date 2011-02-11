@@ -1,6 +1,7 @@
 module QC where
 
-import DiagMessage -- needs to export constructors to be testable
+import Com.DiagMessage -- needs to export constructors to be testable
+import Com.HSFZMessage
 import Data.Char
 import Data.List
 import Data.Word
@@ -79,7 +80,7 @@ permutation initial = inner initial []
 
 prop_bytes2Msg2bytes ::  Bytes -> Bool
 prop_bytes2Msg2bytes bytes = bytes2msg2bytes msgBytes == msgBytes
-    where msgBytes = map chr ((encodeLength $ length byteList) ++ [0,1]) ++ byteList
+    where msgBytes = ((encodeLength $ length byteList) ++ [0,1]) ++ byteList
           byteList = unB bytes
           bytes2msg2bytes bs = maybe "" msg2ByteString (bytes2msg bs)
 

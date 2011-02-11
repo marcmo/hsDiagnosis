@@ -53,8 +53,8 @@ isData = not . isAck
 msg2ByteString :: HSFZMessage -> S.ByteString
 msg2ByteString = runPut . put
 
-bytes2msg :: S.ByteString -> Maybe HSFZMessage
-bytes2msg s
+deserialize2Hsfz :: S.ByteString -> Maybe HSFZMessage
+deserialize2Hsfz s
   | invalid = (error $ "was invalid message: "++(show s))Nothing
   | otherwise = either (const Nothing) Just (runGet get s)
       where payloadLength = parseLength s
