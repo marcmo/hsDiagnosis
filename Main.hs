@@ -18,23 +18,24 @@ import Text.Parsec.Token
 import Control.Applicative
 
 data DiagTool = Diagsend { ip :: String, diagId :: String, message :: String }
-              | ReadDtc { dtcKind :: Int }
+              | ReadDtc { ip :: String, dtcKind :: Int }
               | Logging { logIp :: String, enableLogging :: Bool, showLogging :: Bool }
               | DiagTest { ip :: String, script :: String }
               | LuaTest { script :: String }
                 deriving (Show, Data, Typeable)
-
-diagSend = Diagsend {ip = "10.40.39.68" &= help "ip address",
+defaultIp = "127.0.0.1"
+diagSend = Diagsend {ip = defaultIp &= help "ip address",
                             diagId = "10" &= help "diagnosis id",
                             message = "[0x22,0xF1,0x90]" &= help "diagnostic message to be sent"}
-dtc = ReadDtc { dtcKind = 1 &= name "k" &= help "[primary = 1, secondary = 2]" } &= help "read DTCs in ecu"
+dtc = ReadDtc { ip = defaultIp &= help "ip address",
+                dtcKind = 1 &= name "k" &= help "[primary = 1, secondary = 2]" } &= help "read DTCs in ecu"
 
-logging = Logging { logIp = "10.40.39.68" &= name "i" &= help "ip address",
+logging = Logging { logIp = defaultIp &= name "i" &= help "ip address",
                            enableLogging = def &= help "enable logging",
                            showLogging = def &= help "show mapping"
                          } &= help "change logging settings"
 
-diagTest = DiagTest { ip = "10.40.39.68" &= help "ip address",
+diagTest = DiagTest { ip = defaultIp &= help "ip address",
                       script = def &= help "diagnoser script to run" }
 luaTest = LuaTest { script = def &= help "lua script to run" }
 
@@ -48,13 +49,16 @@ hexnumber = fst . head . readHex <$> (skipMany (string "0x") *> many1 (hexDigit)
 
 main ::  IO ()
 main = withSocketsDo $ do 
-  actions <- cmdArgs $ ((modes [diagSend,dtc,logging,diagTest,luaTest]) &= summary "DiagnosisTool 0.3.0, (c) Oliver Mueller 2010") &= verbosity
+  actions <- cmdArgs $ ((modes [diagSend,dtc,logging,diagTest,luaTest])
+                      &= summary "DiagnosisTool 0.3.0, (c) Oliver Mueller 2010-2011")
+                      &= verbosity
   execute actions
 
 execute :: DiagTool -> IO ()
-execute (ReadDtc x)
-  | x == 1 = readPrimaryErrorMemory
-  | x == 2 = readSecondaryErrorMemory
+execute (ReadDtc ip x)
+  | x == 1 = readPrimaryErrorMemory c
+  | x == 2 = readSecondaryErrorMemory c
+    where c = femConfig ip
 execute (Logging logIp e m) = do
   when e enable
   when m $ showMappingWithConf conf

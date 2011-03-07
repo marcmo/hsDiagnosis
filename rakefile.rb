@@ -1,6 +1,8 @@
 require 'rake/clean'
 require 'benchmark'
 
+Out="bin"
+directory Out
 Output="output.out"
 module OS
   def OS.windows?
@@ -21,42 +23,44 @@ MainHs="Main.hs"
 LuaMainHs="LuaMain.hs"
 DiagScripterHs="DiagScripterMain.hs"
 if OS.unix?
-  DiagTool = "diagtool"
-  LuaScripter = "lua_scripter"
-  DiagScripter = "diag_scripter"
+  def exeName(n) File.join(Out,n) end
 else
-  DiagTool = "diagTool.exe"
-  LuaScripter = "lua_scripter.exe"
-  DiagScripter = "diag_scripter.exe"
+  def exeName(n) File.join(Out,"#{n}.exe") end
 end
+DiagTool = exeName "diagTool"
+LuaScripter = exeName "lua_scripter"
+DiagScripter = exeName "diag_scripter"
 
-TmpFolder = "tmp"
-TimeProf="+RTS -p -K100M"      
-StandardHeap="+RTS -hc -p -K100M" 
-AllocationType="+RTS -hy -p -K100M" 
-ConstructorAlloc="+RTS -hd -p -K100M" 
-CLEAN.include(TmpFolder,Output,"**/*.o","**/*.hi","dist")
+ProfArgs={
+  :time=>"+RTS -p -K100M",
+  :heap=>"+RTS -hc -p -K100M",
+  :allocType=>"+RTS -hy -p -K100M",
+  :constructorAlloc=>"+RTS -hd -p -K100M"
+}
+CLEAN.include(Output,"**/*.o","**/*.hi","dist")
+CLOBBER.include(Out)
 SrcFiles = FileList.new('**/*.hs')
 
-file DiagScripter => SrcFiles do
-  puts "building executable..."
-  sh "ghc -O2 -o #{DiagScripter} -outputdir #{TmpFolder} --make #{DiagScripterHs} -threaded -fforce-recomp"
-  stripExec DiagScripter
-end
-file DiagTool => SrcFiles do
-  puts "building executable..."
-  sh "ghc -O2 -o #{DiagTool} -outputdir #{TmpFolder} --make #{MainHs} -threaded -fforce-recomp"
-  stripExec DiagTool
-end
-file LuaScripter => SrcFiles do
-  puts "building lua-executable..."
-  sh "ghc -O2 -o #{LuaScripter} -outputdir #{TmpFolder} --make #{LuaMainHs} -threaded -fforce-recomp"
+def buildExe(exe,main)
+  puts "building executable:" + exe
+  sh "ghc -O2 -o #{exe} -outputdir #{Out} --make #{main} -threaded -fforce-recomp"
+  # stripExec exe
 end
 
-desc "build executable"
-task :build => [:clean,DiagTool]
+file DiagScripter => SrcFiles << Out do
+  buildExe(DiagScripter,DiagScripterHs)
+end
+file DiagTool => SrcFiles << Out do
+  buildExe(DiagTool,MainHs)
+end
+file LuaScripter => SrcFiles << Out do
+  buildExe(LuaScripter,LuaMainHs)
+end
 
-desc "build diagScripter"
+desc "rebuild all executables"
+task :build => [:clean,DiagTool,DiagScripter,LuaScripter]
+
+desc "rebuild diagScripter"
 task :scripter => [:clean,DiagScripter]
 
 namespace "lua" do
@@ -77,8 +81,8 @@ end
 
 def stripExec (x)
   if OS.unix?
-    sh "strip #{DiagTool}"
-    sh "upx #{DiagTool}"
+    sh "strip #{x}"
+    sh "upx #{x}"
   end
 end
 desc 'execute nvramtest.skr test files'

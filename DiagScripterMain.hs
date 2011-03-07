@@ -16,15 +16,17 @@ data DiagScripter = DiagTest {
   choice :: Bool
 } deriving (Show, Data, Typeable)
 
-diagTest = mode $ DiagTest {
-                    script = def &= typDir & text "diagnoser script to run",
-                    ip = (host conf) &= empty (host conf) & text "ip address of ecu",
-                    choice = enum True [True &= text "say yes", False &= text "say no"]
-                  } &= text "run diagnosis tests"
+diagTest = DiagTest {
+                    script = def &= typDir &= help "diagnoser script to run",
+                    ip = (host conf) &= help "ip address of ecu",
+                    choice = enum True [True &= help "say yes", False &= help "say no"]
+                  } &= help "run diagnosis tests"
 
 main ::  IO ()
 main = withSocketsDo $ do 
-  actions <- cmdArgs "DiagScripter 0.1.0, (c) Oliver Mueller 2010" modes
+  actions <- cmdArgs $ ((modes [diagTest])
+                      &= summary "DiagScripter 0.1.0, (c) Oliver Mueller 2010-2011")
+                      &= verbosity
   execute actions
 
 execute :: DiagScripter -> IO ()
@@ -32,4 +34,3 @@ execute (DiagTest s ip c) = do
     print $ "running script " ++ s ++ " on ip " ++ ip ++ "choice: " ++ show c
     runTestScript s
 
-modes = [diagTest]

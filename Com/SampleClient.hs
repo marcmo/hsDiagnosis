@@ -19,7 +19,6 @@ data SyslogHandle =
                   slAddress :: SockAddr}
 
 main = do
-  -- h <- openlogTcp "127.0.0.1" (show diagPort)
   h <- connectMe "127.0.0.1" diagPort
   m <- newEmptyMVar
   forkIO $ listenForResponse m h
