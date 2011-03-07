@@ -4,16 +4,21 @@ require "Diagnosis"
 function wireformat2msg(m)
   assert(type(m)=="string","invalid message format")
   local a = {}
-	for i=1,string.len(m) do
-		table.insert(a,string.byte(m,i))
-	end
+  local sm = split(m,"\,")
+  for i,v in pairs(sm) do
+  	table.insert(a,tonumber("0x"..v))
+  end
   return Diag.new(a)
 end
 function msg2wireFormat(a)
   assert(type(a)=="table","invalid message format")
   local s=""
   for k,v in pairs(a) do
-    s=s..string.char(v)
+    if string.len(s) == 0 then
+      s = s..string.format("%x",v)
+    else
+      s = s..","..string.format("%x",v)
+    end
   end
   return s
 end
@@ -29,6 +34,7 @@ function sendMsg(source,target,timeout,a)
 	for i=2,string.len(resp) do
 		--print(string.format("0x%x",string.byte(resp,i)))
 	end
+	print("respons on lua side as string was:"..resp)
   return wireformat2msg(resp)
 end
 		
@@ -91,12 +97,31 @@ function onWireRepresentation(m)
 	end
 	return s
 end
+function split(str, pat)
+   local t = {}  -- NOTE: use {n = 0} in Lua-5.0
+   local fpat = "(.-)" .. pat
+   local last_end = 1
+   local s, e, cap = str:find(fpat, 1)
+   while s do
+      if s ~= 1 or cap ~= "" then
+	 table.insert(t,cap)
+      end
+      last_end = e+1
+      s, e, cap = str:find(fpat, last_end)
+   end
+   if last_end <= #str then
+      cap = str:sub(last_end)
+      table.insert(t, cap)
+   end
+   return t
+end
+
 local function test()
-  ms = Diag.new{0xA,0xB,0xC}
+  ms = Diag.new{0xA,0x0,0xC,0x1,0xFF,0x0,0x0,0x0,0x0}
   print("byte table",inspectTable(ms))
   print("as msg:",Diag.tostring(ms))
   wm = msg2wireFormat(ms)
-  print("wiremsg:",onWireRepresentation(wm))
+  print("wiremsg:",wm)
   ms2 = wireformat2msg(wm)
   print("after wireformat2msg",inspectTable(ms2))
   print("as msg:",Diag.tostring(ms2))
