@@ -15,6 +15,7 @@ import Foreign.C
 import Foreign.Ptr
 import Control.Monad
 import Data.List.Split
+import Data.Time.Clock
 
 lua_noerrors = 0
 lua_yield	= 1
@@ -58,6 +59,7 @@ executeLuaScript script = do
     Lua.registerhsfunction s "showMapping" hsLoggingShow
     Lua.registerhsfunction s "showPrimaryDtcs" hsGetPrimaryDtcs
     Lua.registerhsfunction s "showSecondaryDtcs" hsGetSecondaryDtcs
+    Lua.registerhsfunction s "getCurrentTime" hsGetCurrentTime
 
     dofile s script
     Lua.close s
@@ -98,4 +100,11 @@ hsGetSecondaryDtcs :: String -> Int -> Int -> IO ()
 hsGetSecondaryDtcs ip src target = readSecondaryErrorMemory conf
     where conf = MkDiagConfig ip 6801 (fromIntegral src) (fromIntegral target) False standardDiagTimeout
   
+hsGetCurrentTime ::  IO Double
+hsGetCurrentTime = diffTimeToDouble `fmap` getCurrentTime 
+  where diffTimeToDouble (UTCTime _ x) = (fromRational . toRational) x
+
+diffTimeToSeconds :: DiffTime -> Integer
+diffTimeToSeconds = floor . toRational
+
 
