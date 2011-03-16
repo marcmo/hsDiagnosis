@@ -12,7 +12,6 @@ import Com.HSFZMessage
 import Data.Bits
 import Data.List(intersperse,intercalate)
 
-diagTimeout = 5000 :: Int -- ms
 
 data DiagnosisMessage = DiagnosisMessage {
   diagSource :: Word8,

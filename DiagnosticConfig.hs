@@ -1,4 +1,11 @@
 module DiagnosticConfig
+     (
+      mkConf,
+      conf,
+      femConfig,
+      zgwConfig,
+      standardDiagTimeout
+     ) 
 
 where
 
@@ -25,7 +32,8 @@ femConfig = mkConf fem
 zgwConfig = mkConf zgw
 msgTunnelConf = mkConf messageTunnel msgTunnelIp
 
+standardDiagTimeout = 5000 :: Int -- ms
 mkConf :: Word8 -> String -> DiagConfig
-mkConf target ip = MkDiagConfig ip 6801 0xf4 target debug_on
+mkConf target ip = MkDiagConfig ip 6801 0xf4 target debug_on standardDiagTimeout
 
 

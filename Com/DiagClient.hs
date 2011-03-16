@@ -1,4 +1,5 @@
 {-# LANGUAGE ScopedTypeVariables #-}
+{-# LANGUAGE OverloadedStrings #-}
 module Com.DiagClient
     (
       module Com.DiagMessage,
@@ -68,7 +69,7 @@ sendMessage c msg = bracket diagConnect disconnect loop
         -- h <- socketToHandle sock ReadWriteMode
         h <- connectTo (host c) (PortNumber $ fromIntegral (port c))
         hSetBuffering h NoBuffering
-        return (DiagConnection h (verbose c))
+        return (MkDiagConnection h (verbose c) (diagTimeout c))
     notify
       | verbose c = bracket_ (printf "Connecting to %s ... " (host c) >> hFlush stdout) (putStrLn "done.")
       | otherwise = bracket_ (return ()) (return ())
@@ -84,7 +85,7 @@ run msg = do
     pushOutMessage :: HSFZMessage -> Net ()
     pushOutMessage msg = do
         h <- asks diagHandle
-        log ("--> " ++ show msg)
+        log ("sending --> " ++ show msg)
         io $ hPutStr h (msg2ByteString msg)
         io $ hFlush h -- Make sure that we send data immediately
 
@@ -107,7 +108,6 @@ listenForResponse m =
     receiveDataMsg ::  Ptr CChar -> Net (Maybe HSFZMessage)
     receiveDataMsg buf = do
         msg <- receiveMsg buf 
-        log $ "was " ++ show msg
         maybe (return ()) (\m -> log $ "<-- " ++ show m) msg
         maybe (return Nothing)
           (\m->if isData m
@@ -117,21 +117,23 @@ listenForResponse m =
     receiveMsg :: Ptr CChar -> Net (Maybe HSFZMessage)
     receiveMsg buf = do
         h <- asks diagHandle
-        dataAvailable <- waitForData diagTimeout
+        timeout <- asks connectionTimeout
+        log ("wait for data with timeout:" ++ show timeout ++ " ms\n")
+        dataAvailable <- waitForData timeout
+        log ("\n")
         if not dataAvailable then (io $ print "no message available...") >> return Nothing
           else do
             answereBytesRead <- io $ hGetBufNonBlocking h buf receiveBufSize
             res2 <- io $ S.packCStringLen (buf,answereBytesRead)
             log $ "received over the wire: " ++ (showBinString res2)
             let resp = deserialize2Hsfz res2
-            log $ "received over the wire(msg): " ++ (show resp)
             return resp
 
     waitForData ::  Int -> Net (Bool)
     waitForData waitTime_ms = do
       h <- asks diagHandle
-      io $ putStr "."
-      log ("waitForData " ++ show waitTime_ms ++ " ms\n")
+      io $ S.putStr "."
+      -- log (".")
       inputAvailable <- io $ hWaitForInput h pollingMs
       if inputAvailable then return True 
         else if waitTime_ms > 0

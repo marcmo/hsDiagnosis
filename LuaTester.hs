@@ -4,6 +4,7 @@ import qualified Scripting.Lua as Lua
 import Data.Word
 import Data.List(intercalate)
 import Com.DiagClient(sendData,diagPayload,DiagConfig(MkDiagConfig))
+import DiagnosticConfig(standardDiagTimeout)
 import Script.LoggingFramework
 import Script.ErrorMemory
 import Util.Encoding
@@ -24,11 +25,11 @@ lua_errmem = 4
 
 dofile :: Lua.LuaState -> String -> IO Int
 dofile s name = do
+    -- (putStrLn $ "called scripter with: " ++ name) >> return 0
     res <- Lua.loadfile s name
     if (res == lua_noerrors)
     	then print $ "loaded file correctly:" ++ name
       else reportError $ "error while loading file: " ++ name
-      -- else error $ "could not load file:" ++ name
     let handlePcall x
           | x == lua_noerrors = print $ "executed file correctly:" ++ name
           | x == lua_errrun = reportError "run-error"
@@ -64,15 +65,14 @@ executeLuaScript script = do
 string2hex ::  String -> Word8
 string2hex = fst . head . readHex
 
--- TODO add timeout implementation
 hsSend :: String -> Int -> Int -> Int -> String -> IO String
-hsSend ip2 src target timeout xs = do
+hsSend ip src target timeout xs = do
     -- putStrLn $ "ip was:" ++ ip2 ++ " hsSend from " ++ show src ++ " to " ++ show target ++ " (timeout=" ++ show timeout ++ ")"
     let m = map (\x->"0x"++x) $ splitOn "," xs
     -- putStrLn $ "message was:" ++ show m
     -- let msgx = map (int2Word8 . ord) xs
     let msgx = map (int2Word8 . read) m
-    let conf = MkDiagConfig ip2 6801 (fromIntegral src) (fromIntegral target) False
+    let conf = MkDiagConfig ip 6801 (fromIntegral src) (fromIntegral target) True timeout
     maybeResp <- sendData conf msgx
     let res =  maybe ("error occured! no response arrived")
                 (\resp-> convertToString (diagPayload resp))
@@ -92,10 +92,10 @@ hsLoggingShow = showMapping
 
 hsGetPrimaryDtcs :: String -> Int -> Int -> IO ()
 hsGetPrimaryDtcs ip src target = readPrimaryErrorMemory conf
-    where conf = MkDiagConfig ip 6801 (fromIntegral src) (fromIntegral target) False
+    where conf = MkDiagConfig ip 6801 (fromIntegral src) (fromIntegral target) False standardDiagTimeout
   
 hsGetSecondaryDtcs :: String -> Int -> Int -> IO ()
 hsGetSecondaryDtcs ip src target = readSecondaryErrorMemory conf
-    where conf = MkDiagConfig ip 6801 (fromIntegral src) (fromIntegral target) False
+    where conf = MkDiagConfig ip 6801 (fromIntegral src) (fromIntegral target) False standardDiagTimeout
   
 

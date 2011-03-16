@@ -1,4 +1,11 @@
 import LuaTester(executeLuaScript)
+import System.Environment(getArgs)
+import System.Directory(doesFileExist)
 
-main = executeLuaScript "script_send_diag.lua"
+main = do
+  script:_ <- getArgs
+  exists <- doesFileExist script
+  if exists
+  	then executeLuaScript script
+  	else error $ "file not found: " ++ script
 

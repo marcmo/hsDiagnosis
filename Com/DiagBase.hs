@@ -22,13 +22,18 @@ receiveBufSize = 4096 :: Int
 pollingMs = 100 :: Int
 diagPort = 6801 :: Int
 
-data DiagConnection = DiagConnection { diagHandle :: Handle, chatty :: Bool }
+data DiagConnection = MkDiagConnection {
+	diagHandle :: Handle,
+	chatty :: Bool,
+	connectionTimeout :: Int
+}
 data DiagConfig = MkDiagConfig {
   host :: String,
   port :: Int,
   source :: Word8,
   target :: Word8,
-  verbose :: Bool
+  verbose :: Bool,
+  diagTimeout :: Int
 } deriving (Show)
 
 type Net = ReaderT DiagConnection IO

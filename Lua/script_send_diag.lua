@@ -5,7 +5,7 @@ setIp(ip)
 --setIp("localhost")
 
 require("nvramtests")
---runNvramTests(2);
+runNvramTests(2);
 
 --local msg=Diag.new{ 0x22,0x20,0x0 }
 --local resp = sendMsg(0xf4, 0x40, 2000, msg)

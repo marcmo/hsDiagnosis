@@ -67,11 +67,12 @@ namespace "lua" do
   desc "build luaScripter"
   task :scripter => [:clean,LuaScripter]
   desc "run lua_scripter"
-  task :run => LuaScripter do
+  task :run, :scriptName do |t,args|
     cd "Lua" do
-      sh "../#{LuaScripter}"
+      sh "../#{LuaScripter} #{args[:scriptName]}"
     end
   end
+  task :run => LuaScripter
 end
 
 desc "run all quickCheck testcases"
