@@ -21,7 +21,7 @@ import Network(PortID(PortNumber),connectTo)
 import System.IO hiding (hPutStrLn,hPutStr)
 import Data.ByteString.Char8 hiding (putStrLn,putStr)
 import qualified Data.ByteString as S
-import Control.Concurrent(putMVar,MVar,forkIO,newEmptyMVar,takeMVar)
+import Control.Concurrent(putMVar,MVar,forkIO,newEmptyMVar,takeMVar,yield)
 import Foreign(Ptr,Word8,free,mallocBytes)
 import Foreign.C.String(peekCStringLen)
 import Foreign.C.Types(CChar)
@@ -133,6 +133,7 @@ listenForResponse m =
     waitForData waitTime_ms = do
       h <- asks diagHandle
       io $ S.putStr "."
+      io $ yield
       -- log (".")
       inputAvailable <- io $ hWaitForInput h pollingMs
       if inputAvailable then return True 

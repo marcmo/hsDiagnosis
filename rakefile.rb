@@ -43,7 +43,8 @@ SrcFiles = FileList.new('**/*.hs')
 
 def buildExe(exe,main)
   puts "building executable:" + exe
-  sh "ghc -O2 -o #{exe} -outputdir #{Out} --make #{main} -threaded -fforce-recomp"
+  sh "ghc -O2 -o #{exe} -outputdir #{Out} --make #{main} -fforce-recomp -fspec-constr-count=6"
+  # sh "ghc -O2 -o #{exe} -outputdir #{Out} --make #{main} -threaded -fforce-recomp -fspec-constr-count=6"
   # stripExec exe
 end
 
