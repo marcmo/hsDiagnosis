@@ -1,6 +1,7 @@
 require("base")
 
-local ip = "10.40.39.19"
+--local ip = "localhost"
+local ip = "10.40.39.49"
 setIp(ip)
 
 require("nvramtests")

@@ -1,11 +1,11 @@
 print"loading Diagnosis"
 require "loggingSupport"
 
-logger = logging.new(function(self, level, message)
+local logger = logging.new(function(self, level, message)
                              print(level, message)
                              return true
                            end)
-logger:setLevel (logging.WARN)
+logger:setLevel (logging.INFO)
 Diag = {} 
 DiagTest = {}
 DiagTest.prototype = { target = 0x10 }
@@ -33,7 +33,6 @@ function Diag.tostring(msg)
   for i,e in ipairs(msg) do
     s = string.format("%s,0x%x",s,e)
   end
-  --print("Diag.tostring",s)
 	return s
 end
 
@@ -50,6 +49,9 @@ function Diag.equals(msg1,msg2)
 end
 function Diag.match(msg,pattern)
 	local patPos = 1
+  if Diag.length(msg) == 0 then
+  	return pattern[patPos] == "*"
+  end
 	local nextChar = nil
 	local state = "hex"
 	local matching,not_matching,last_pattern_is_star = 0,1,2
@@ -91,12 +93,17 @@ function Diag.match(msg,pattern)
 		if not(result==matching) then break end
 		nextChar = pattern[patPos+1]
 	end
-	return ((result==matching) or (result==last_pattern_is_star))
+	local finalResult = (result==matching) or (result==last_pattern_is_star)
+	if finalResult then
+		--logger:log(logging.INFO, string.format("message %s matched the pattern %s", Diag.tostring(msg), Diag.tostring(pattern)))
+  else
+		logger:log(logging.INFO, "Ooops..! mesage did NOT match!")
+  end
+	return finalResult
 end
 function Diag.length(msg)
 	local s = 0
   for i,e in ipairs(msg) do
-		print("i:",i,"e",e)
 		s = s+1
 	end
 	return s

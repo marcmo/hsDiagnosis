@@ -1,5 +1,11 @@
 print("loading base.lua")
 require "Diagnosis"
+require "loggingSupport"
+local logger = logging.new(function(self, level, message)
+                             print(level, message)
+                             return true
+                           end)
+logger:setLevel (logging.WARN)
 
 function wireformat2msg(m)
   assert(type(m)=="string","invalid message format")
@@ -28,13 +34,13 @@ function setIp(ip)
   print(ipAddress)
 end
 
-function sendMsg(source,target,timeout,a)
-  --print("calling haskell to send message",Diag.tostring(a))
-  local resp = send(ipAddress,source,target,timeout,msg2wireFormat(a))
+function sendMsg(source,target,timeout,a, debug)
+  logger:log(logging.DEBUG, string.format("calling haskell to send message:%s",Diag.tostring(a)))
+  local resp = send(ipAddress,source,target,timeout,debug,msg2wireFormat(a))
 	for i=2,string.len(resp) do
 		--print(string.format("0x%x",string.byte(resp,i)))
 	end
-	print("respons on lua side as string was:"..resp)
+  logger:log(logging.DEBUG, "response on lua side as string was:"..resp)
   return wireformat2msg(resp)
 end
 		
@@ -44,7 +50,7 @@ end
 
 function executeTest(test)
     local msg = test.send
-    local resp = sendMsg(test.source, test.target, test.timeout, msg)
+    local resp = sendMsg(test.source, test.target, test.timeout, msg, false)
     return Diag.match(resp,test.expect)
 end
 

@@ -7,6 +7,7 @@ m2=Diag.new{0x22,0xF1}
 m3=Diag.new{0x31,0xF1}
 m4=Diag.new{0x31,0xF1,0x0}
 m5=Diag.new{0x31,0xF1,0x0,0x1,0x2,0x3,0x4,0x5}
+mEmpty = Diag.new{}
 
 local logger = logging.new(function(self, level, message)
                              print(level, message)
@@ -28,6 +29,8 @@ function test_matching()
 	assert_true(Diag.match(m5,{0x31,"*",0x1,"*",0x5}))
 	assert_false(Diag.match(m5,{0x31,"*",0x1,"*",0x4}),"last byte not matching")
 	assert_true(Diag.match(m5,{0x31,"*",0x1,"*"}))
+	assert_true(Diag.match(mEmpty,{"*"}))
+	assert_false(Diag.match(mEmpty,{0x22,"*"}))
 end
 
 function test_msg_length()
@@ -80,7 +83,7 @@ for i=start,string.len(input) do
 	print(string.format("0x%x",string.byte(input,i)))
 end
 
---lunatest.run()
+lunatest.run()
 print("logging:")
 logger:log(logging.INFO, "sending email")
 logger:log(logging.WARN, "sending email")

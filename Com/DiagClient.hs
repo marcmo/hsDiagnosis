@@ -78,7 +78,9 @@ run :: HSFZMessage -> Net (Maybe HSFZMessage)
 run msg = do
     m <- io newEmptyMVar
     ReaderT $ \r ->
-      forkIO $ runReaderT (listenForResponse m) r
+      -- forkIO $ runReaderT (listenForResponse m) r
+      forkIO $ catch (runReaderT (listenForResponse m) r) (\(e :: HsfzException) -> print e >> putMVar m Nothing >> return ())
+    -- io $ putStrLn "hickup"
     pushOutMessage msg
     io $ takeMVar m 
   where

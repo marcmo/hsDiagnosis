@@ -8,7 +8,7 @@ import Control.Monad (when)
 import Network.Socket
 import Script.ErrorMemory
 import Script.LoggingFramework
-import Test.DiagScriptTester
+import Test.DiagScriptTester(runTestScript)
 
 data DiagScripter = DiagTest {
   script :: String,
@@ -19,7 +19,7 @@ data DiagScripter = DiagTest {
 diagTest = DiagTest {
                     script = def &= typDir &= help "diagnoser script to run",
                     ip = (host conf) &= help "ip address of ecu",
-                    choice = enum True [True &= help "say yes", False &= help "say no"]
+                    choice = enum [True &= help "say yes", False &= help "say no"]
                   } &= help "run diagnosis tests"
 
 main ::  IO ()
@@ -32,5 +32,5 @@ main = withSocketsDo $ do
 execute :: DiagScripter -> IO ()
 execute (DiagTest s ip c) = do
     print $ "running script " ++ s ++ " on ip " ++ ip ++ "choice: " ++ show c
-    runTestScript s
+    runTestScript s ip
 

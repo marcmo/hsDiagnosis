@@ -1,5 +1,5 @@
 Name:                diagnosis
-Version:             0.1
+Version:             0.1.1
 Synopsis:            haskell implementation of diagnostic framework
 -- A longer description of the package.
 -- Description:         
@@ -14,11 +14,11 @@ Build-type:          Simple
 -- Extra-source-files:  
 Cabal-version:       >=1.2
 
-Executable diagnosis
-  Main-is:   Main.hs
+Executable luaexecuter
+  Main-is:   LuaMain.hs
   Build-Depends:      haskell98,cmdargs,bytestring,pcre-light,parsec>=3.0,base>=4,mtl,HUnit,test-framework-hunit,test-framework,network,
-                      regex-compat
-  GHC-Options:        -threaded
+                      directory, time, split, deepseq, cereal, regex-compat, hslua
+  -- GHC-Options:        -threaded
 
   -- Modules not exported by this package.
   -- Other-modules:       

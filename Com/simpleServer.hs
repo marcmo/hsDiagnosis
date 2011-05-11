@@ -1,10 +1,11 @@
 -- Echo server program
 module Main where
 
-import Control.Monad (unless)
+import Control.Monad (unless,when)
 import Network.Socket hiding (recv)
 import qualified Data.ByteString as S
 import Data.Word(Word8)
+import Control.Concurrent(threadDelay)
 import Data.List(isPrefixOf)
 import Network.Socket.ByteString (recv, sendAll)
 import Com.DiagMessage
@@ -24,21 +25,33 @@ main = withSocketsDo $
 
     where
       loop s = do
-        (conn, _) <- accept s
-        talk conn
+        (connSock, _) <- accept s
+        talk connSock
         loop s
-        -- sClose conn
+        -- sClose connSock
         -- sClose sock
 
       talk :: Socket -> IO ()
-      talk conn = do 
+      talk connSock = do 
              putStrLn "now we are talking..."
-             msg <- recv conn 1024
+             isCon <- sIsConnected connSock
+             isBound <- sIsBound connSock
+             isListening <-sIsListening connSock
+             isReadable <-sIsReadable connSock
+             isWritable <-sIsWritable connSock
+             when isCon (putStrLn "connected!")
+             when isBound (putStrLn $ "bound!")
+             when isListening (putStrLn $ "listening!")
+             when isReadable (putStrLn $ "readable!")
+             when isWritable (putStrLn $ "writable!")
+             msg <- recv connSock 1024
              print $ "trying to deserialize bytestring:" ++  (show msg)
              unless (S.null msg) $ do
               print $ "received over the wire: " ++ (showBinString msg)
-              sendAll conn $ replyTo $ deserialize2Hsfz msg
-              talk conn
+              threadDelay(500*1000)
+              sendAll connSock $ replyTo $ deserialize2Hsfz msg
+              putStrLn "sent back response, starting to listen again..."
+              talk connSock
       replyTo :: Maybe HSFZMessage -> S.ByteString
       replyTo (Just m) = msg2ByteString responseHsfz
         where dmsg = hsfz2diag m

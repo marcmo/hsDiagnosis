@@ -1,15 +1,18 @@
+{-# LANGUAGE DeriveDataTypeable #-}
 module Com.HSFZMessage
 
 where
 
 import Data.Word(Word8)
 import Data.List(intersperse)
-import Util.Encoding(showAsHexString)
+import Util.Encoding(showBinString,showAsHexString)
 import qualified Data.ByteString as S
 import qualified Data.ByteString.Lazy as L
 import Data.Serialize.Get
 import Data.Serialize.Put
 import Data.Serialize
+import Data.Typeable
+import Control.Exception
 import Debug.Trace
 
 headerLen = 6
@@ -53,9 +56,13 @@ isData = not . isAck
 msg2ByteString :: HSFZMessage -> S.ByteString
 msg2ByteString = runPut . put
 
+data HsfzException = InvalidMessageException String
+    deriving (Show, Typeable)
+
+instance Exception HsfzException
 deserialize2Hsfz :: S.ByteString -> Maybe HSFZMessage
 deserialize2Hsfz s
-  | invalid = (error $ "was invalid message: "++(show s))Nothing
+  | invalid = (throw $ InvalidMessageException (showBinString s)) Nothing
   | otherwise = either (const Nothing) Just (runGet get s)
       where payloadLength = parseLength s
             invalid = (S.length s < headerLen) || (S.length s /= headerLen + payloadLength)

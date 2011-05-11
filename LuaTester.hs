@@ -23,7 +23,6 @@ lua_errrun = 2
 lua_errsyntax = 3
 lua_errmem = 4
 
-
 dofile :: Lua.LuaState -> String -> IO Int
 dofile s name = do
     -- (putStrLn $ "called scripter with: " ++ name) >> return 0
@@ -67,14 +66,14 @@ executeLuaScript script = do
 string2hex ::  String -> Word8
 string2hex = fst . head . readHex
 
-hsSend :: String -> Int -> Int -> Int -> String -> IO String
-hsSend ip src target timeout xs = do
+hsSend :: String -> Int -> Int -> Int -> Bool -> String -> IO String
+hsSend ip src target timeout debug xs = do
     -- putStrLn $ "ip was:" ++ ip2 ++ " hsSend from " ++ show src ++ " to " ++ show target ++ " (timeout=" ++ show timeout ++ ")"
     let m = map (\x->"0x"++x) $ splitOn "," xs
     -- putStrLn $ "message was:" ++ show m
     -- let msgx = map (int2Word8 . ord) xs
     let msgx = map (int2Word8 . read) m
-    let conf = MkDiagConfig ip 6801 (fromIntegral src) (fromIntegral target) True timeout
+    let conf = MkDiagConfig ip 6801 (fromIntegral src) (fromIntegral target) debug timeout
     maybeResp <- sendData conf msgx
     let res =  maybe ("error occured! no response arrived")
                 (\resp-> convertToString (diagPayload resp))
@@ -106,5 +105,23 @@ hsGetCurrentTime = diffTimeToDouble `fmap` getCurrentTime
 
 diffTimeToSeconds :: DiffTime -> Integer
 diffTimeToSeconds = floor . toRational
+
+stackDump ::  Lua.LuaState -> IO ()
+stackDump s = do
+      print "stackdump:"
+      top <- Lua.gettop s
+      doLevel 1 top
+        where doLevel n top
+                | n == top = print "end"
+                | otherwise = do
+                    t <- Lua.ltype s n
+                    case t of
+                      Lua.TSTRING  -> Lua.tostring s n >>= showLevel n
+                      Lua.TBOOLEAN -> Lua.toboolean s n >>= showLevel n
+                      Lua.TNUMBER  -> Lua.tonumber s n >>= showLevel n
+                      _            -> Lua.typename s t >>= showLevel n
+              showLevel n xs = do
+                let ss = concat $ replicate n "--->"
+                print $ ss ++ "level " ++ show n ++ ", " ++ show xs
 
 
