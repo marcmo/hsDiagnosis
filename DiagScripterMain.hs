@@ -3,11 +3,9 @@ module Main where
 
 import System.Console.CmdArgs
 import Com.DiagClient(host)
-import DiagnosticConfig
+import DiagnosticConfig(conf)
 import Control.Monad (when)
 import Network.Socket
-import Script.ErrorMemory
-import Script.LoggingFramework
 import Test.DiagScriptTester(runTestScript)
 
 data DiagScripter = DiagTest {

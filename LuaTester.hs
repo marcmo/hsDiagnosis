@@ -5,7 +5,7 @@ import Data.Word
 import Data.List(intercalate)
 import Com.DiagClient(sendData,diagPayload,DiagConfig(MkDiagConfig))
 import DiagnosticConfig(standardDiagTimeout)
-import Script.LoggingFramework
+import Script.LoggingFramework(showMapping)
 import Script.ErrorMemory
 import Util.Encoding
 import Data.Char
