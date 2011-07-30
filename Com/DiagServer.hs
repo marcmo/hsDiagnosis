@@ -46,10 +46,6 @@ addCommand handle cmd = do
     hPutStrLn handle $ show $ (read $ cmd !! 1) + (read $ cmd !! 2)
 
 
--- plainHandler :: HandlerFunc
--- plainHandler addr msg = 
---     putStrLn $ "From " ++ show addr ++ ": " ++ msg
--- 
 serveDiagnosis :: String -> HandlerFunc -> IO ()
 serveDiagnosis port handlerfunc = withSocketsDo $
     do addrinfos <- NS.getAddrInfo 

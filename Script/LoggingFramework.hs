@@ -12,28 +12,60 @@ data LoggingInstruction = DISABLEALL
                         | DISPLAYSETTINGS
                            deriving (Eq, Ord, Show, Read, Enum)
 
-data Component = COMMON
-               | FZM
-               | DEM
-               | SYSTIMECLIENT
-               | TPROUTER
-               | TRANSPORT
-               | DIAGNOSIS
-               | SESSIONCONTROL
-               | TAS
-               | TEST
-               | SCCLIENT
-               | LIFECYCLE
-               | CAN
-               | EEPROM
-               | DMCLIENT
-               | EEE
-               | CODING
-               | LIN
-               | FUSI
-               | SWC
-               | XCP
-               | GLOBAL
+type UsedComponent = ComponentBDC
+-- data Component = COMMON
+--                | FZM
+--                | DEM
+--                | SYSTIMECLIENT
+--                | TPROUTER
+--                | TRANSPORT
+--                | DIAGNOSIS
+--                | SESSIONCONTROL
+--                | TAS
+--                | TEST
+--                | SCCLIENT
+--                | LIFECYCLE
+--                | CAN
+--                | EEPROM
+--                | DMCLIENT
+--                | EEE
+--                | CODING
+--                | LIN
+--                | FUSI
+--                | SWC
+--                | XCP
+--                | GLOBAL
+--                     deriving (Eq, Ord, Show, Read, Enum)
+data ComponentBDC = CAN
+                  | CODING
+                  | COMMON
+                  | DEM
+                  | DIAGNOSIS
+                  | DMCLIENT
+                  | EEE
+                  | EEPROM
+                  | ETHERNET
+                  | FUSI
+                  | FZM
+                  | HTTP
+                  | LIFECYCLE
+                  | LIN
+                  | REMOTE
+                  | RPC
+                  | SCCLIENT
+                  | SELFDIAGNOSIS
+                  | SESSIONCONTROL
+                  | SWC
+                  | SYSTIMECLIENT
+                  | TAS
+                  | TCP
+                  | TEST
+                  | TPROUTER
+                  | TRANSPORT
+                  | UDP
+                  | XCP
+                  | ZEROCONF
+                  | GLOBAL
                     deriving (Eq, Ord, Show, Read, Enum)
 
 data LogLevel = NOLOGGING
@@ -44,9 +76,8 @@ data LogLevel = NOLOGGING
               | CRITICAL
                    deriving (Eq, Ord, Show, Read, Enum)
 
-main = showMapping
 
-setLevel :: Component -> LogLevel -> IO (Maybe DiagnosisMessage)
+setLevel :: UsedComponent -> LogLevel -> IO (Maybe DiagnosisMessage)
 setLevel comp level = sendData conf [0xbf,0x12,0x04,toWord SETLEVEL,toWord comp,toWord level]
 
 disable = sendData conf [0xbf,0x12,0x04,toWord DISABLEALL] >> return ()
@@ -62,9 +93,7 @@ interpreteMapping ::  [Word8] -> [String]
 interpreteMapping bs = 
   let mapping = zip [0..] (drop 3 bs) 
       showLevel = show . (toEnum :: Int -> LogLevel) . word8ToInt
-      showComponent = show . (toEnum :: Int -> Component) . word8ToInt
+      showComponent = show . (toEnum :: Int -> UsedComponent) . word8ToInt
       display (pos,lev) = showComponent pos ++ " -> " ++ showLevel lev in
     map display mapping
 
-toWord :: (Enum a) => a -> Word8
-toWord = int2Word8 . fromEnum

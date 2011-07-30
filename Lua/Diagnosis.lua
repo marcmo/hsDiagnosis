@@ -27,6 +27,9 @@ end
 DiagTest.mt.__index = function (table,key)
 	return DiagTest.prototype[key]
 end
+function DiagTest.tostring(t)
+	return Diag.tostring(t.send)
+end
 
 function Diag.tostring(msg)
 	local s = ""

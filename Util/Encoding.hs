@@ -59,3 +59,6 @@ nothingIf False = Just 0
 convert :: String -> Char
 convert = chr . fst . head . readHex
 
+toWord :: (Enum a) => a -> Word8
+toWord = int2Word8 . fromEnum
+
