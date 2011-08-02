@@ -6,6 +6,7 @@ module Com.DiagClient
       sendBytes,
       sendDiagMsg,
       sendData,
+      sendDataAsync,
       sendDataTo,
       string2hex,
       Word8,
@@ -35,7 +36,7 @@ import Prelude hiding (catch,log)
 sendData ::  DiagConfig -> [Word8] -> IO (Maybe DiagnosisMessage)
 sendData c xs = do
   print $ "send to " ++ host c
-  resp <- sendDiagMsg c $ DiagnosisMessage (source c) (target c) xs
+  resp <- sendDiagMsg c False $ DiagnosisMessage (source c) (target c) xs
   print $ show resp
   when (isNegativeResponse resp) $ do
     let (Just (DiagnosisMessage _ _ (_:_:err:_))) = resp
@@ -43,30 +44,30 @@ sendData c xs = do
     print $ "negative response: " ++ nameOfError err
   return resp
 
+sendDataAsync ::  DiagConfig -> [Word8] -> IO ()
+sendDataAsync c xs = do
+  print $ "send async to " ++ host c
+  sendDiagMsg c True $ DiagnosisMessage (source c) (target c) xs
+  return ()
+
 sendDataTo :: DiagConfig -> [Word8] -> Word8 -> Word8 -> IO (Maybe DiagnosisMessage)
-sendDataTo c xs src target = (sendDiagMsg c . DiagnosisMessage src target) xs
+sendDataTo c xs src target = (sendDiagMsg c False . DiagnosisMessage src target) xs
 
 sendBytes :: DiagConfig -> [Word8] -> IO (Maybe HSFZMessage)
-sendBytes c = sendMessage c . dataMessage
+sendBytes c = sendMessage c False . dataMessage
 
-sendDiagMsg :: DiagConfig -> DiagnosisMessage -> IO (Maybe DiagnosisMessage)
-sendDiagMsg c dm = do
+sendDiagMsg :: DiagConfig -> Bool -> DiagnosisMessage -> IO (Maybe DiagnosisMessage)
+sendDiagMsg c async dm = do
     let hsfzMsg = diag2hsfz dm DataBit
-    hsfzResp <- sendMessage c hsfzMsg
+    hsfzResp <- sendMessage c async hsfzMsg
     return $ maybe Nothing (Just . hsfz2diag) hsfzResp
 
-sendMessage :: DiagConfig -> HSFZMessage -> IO (Maybe HSFZMessage)
-sendMessage c msg = bracket diagConnect disconnect loop
+sendMessage :: DiagConfig -> Bool -> HSFZMessage -> IO (Maybe HSFZMessage)
+sendMessage c async msg = bracket diagConnect disconnect loop
   where
     disconnect = hClose . diagHandle
-    loop st    = catch (runReaderT (run msg) st) (\(_ :: IOException) -> return Nothing)
+    loop st    = catch (runReaderT (run async msg) st) (\(_ :: IOException) -> return Nothing)
     diagConnect = notify $ do
-        -- addrinfos <- getAddrInfo Nothing (Just $ host c) (Just $ port c)
-        -- let serveraddr = head addrinfos
-        -- sock <- socket (addrFamily serveraddr) Stream defaultProtocol
-        -- setSocketOption sock KeepAlive 1
-        -- connect sock (addrAddress serveraddr)
-        -- h <- socketToHandle sock ReadWriteMode
         h <- connectTo (host c) (PortNumber $ fromIntegral (port c))
         hSetBuffering h NoBuffering
         return (MkDiagConnection h (verbose c) (diagTimeout c))
@@ -74,15 +75,17 @@ sendMessage c msg = bracket diagConnect disconnect loop
       | verbose c = bracket_ (printf "Connecting to %s ... " (host c) >> hFlush stdout) (putStrLn "done.")
       | otherwise = bracket_ (return ()) (return ())
 
-run :: HSFZMessage -> Net (Maybe HSFZMessage)
-run msg = do
-    m <- io newEmptyMVar
-    ReaderT $ \r ->
-      -- forkIO $ runReaderT (listenForResponse m) r
-      forkIO $ catch (runReaderT (listenForResponse m) r) (\(e :: HsfzException) -> print e >> putMVar m Nothing >> return ())
-    -- io $ putStrLn "hickup"
-    pushOutMessage msg
-    io $ takeMVar m 
+run :: Bool -> HSFZMessage -> Net (Maybe HSFZMessage)
+run async msg = do
+    case async of
+      True -> pushOutMessage msg >> return Nothing
+      False -> do
+        m <- io newEmptyMVar
+        ReaderT $ \r ->
+          forkIO $ catch (runReaderT (listenForResponse m) r) (\(e :: HsfzException) -> print e >> putMVar m Nothing >> return ())
+        -- io $ putStrLn "hickup"
+        pushOutMessage msg
+        io $ takeMVar m 
   where
     pushOutMessage :: HSFZMessage -> Net ()
     pushOutMessage msg = do

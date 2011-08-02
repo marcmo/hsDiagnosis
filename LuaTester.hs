@@ -3,7 +3,7 @@ module LuaTester where
 import qualified Scripting.Lua as Lua
 import Data.Word
 import Data.List(intercalate)
-import Com.DiagClient(sendData,diagPayload,DiagConfig(MkDiagConfig))
+import Com.DiagClient(sendData,sendDataAsync,diagPayload,DiagConfig(MkDiagConfig))
 import DiagnosticConfig(standardDiagTimeout)
 import Script.LoggingFramework(showMapping)
 import Script.ErrorMemory
@@ -54,6 +54,7 @@ executeLuaScript script = do
     Lua.openlibs s
  
     Lua.registerhsfunction s "send" hsSend
+    Lua.registerhsfunction s "sendAsync" hsSendAsync
     Lua.registerhsfunction s "wait" hsSleep
     Lua.registerhsfunction s "showMapping" hsLoggingShow
     Lua.registerhsfunction s "showPrimaryDtcs" hsGetPrimaryDtcs
@@ -80,6 +81,13 @@ hsSend ip src target timeout debug xs = do
                 maybeResp
     -- putStrLn $ "response in haskell to send back to lua was:" ++ res
     return res
+
+hsSendAsync :: String -> Int -> Int -> Int -> Bool -> String -> IO ()
+hsSendAsync ip src target timeout debug xs = do
+    let m = map (\x->"0x"++x) $ splitOn "," xs
+    let msgx = map (int2Word8 . read) m
+    let conf = MkDiagConfig ip 6801 (fromIntegral src) (fromIntegral target) debug timeout
+    sendDataAsync conf msgx
 
 convertToString :: [Word8] -> String
 convertToString xs = intercalate "," ys

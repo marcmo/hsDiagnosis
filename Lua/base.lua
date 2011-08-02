@@ -43,6 +43,11 @@ function sendMsg(source,target,timeout,a, debug)
   logger:log(logging.DEBUG, "response on lua side as string was:"..resp)
   return wireformat2msg(resp)
 end
+
+function sendMsgAsync(source,target,timeout,a, debug)
+  logger:log(logging.DEBUG, string.format("calling haskell to sendAsync message:%s",Diag.tostring(a)))
+  sendAsync(ipAddress,source,target,timeout,debug,msg2wireFormat(a))
+end
 		
 function execTests(tests)
 	loop(1,tests)
