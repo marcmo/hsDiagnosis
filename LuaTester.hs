@@ -76,11 +76,9 @@ hsSend ip src target timeout debug xs = do
     let msgx = map (int2Word8 . read) m
     let conf = MkDiagConfig ip 6801 (fromIntegral src) (fromIntegral target) debug timeout
     maybeResp <- sendData conf msgx
-    let res =  maybe ("error occured! no response arrived")
-                (\resp-> convertToString (diagPayload resp))
-                maybeResp
+    if length maybeResp == 0 then return ("error occured! no response arrived")
+    	else return (convertToString (diagPayload (head maybeResp)))
     -- putStrLn $ "response in haskell to send back to lua was:" ++ res
-    return res
 
 hsSendAsync :: String -> Int -> Int -> Int -> Bool -> String -> IO ()
 hsSendAsync ip src target timeout debug xs = do

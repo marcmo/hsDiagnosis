@@ -37,4 +37,7 @@ hsfz2diag ::  HSFZMessage -> DiagnosisMessage
 hsfz2diag hm = DiagnosisMessage (diagBytes!!0) (diagBytes!!1) (drop 2 diagBytes)
   where diagBytes = payload hm
 
+stream2diag ::  MessageStream -> [DiagnosisMessage]
+stream2diag (MessageStream xs) = map hsfz2diag xs
+
 

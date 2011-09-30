@@ -39,17 +39,21 @@ data DiagConfig = MkDiagConfig {
 type Net = ReaderT DiagConnection IO
 type Callback = Maybe DiagnosisMessage -> IO ()
 
-isNegativeResponse Nothing = False
-isNegativeResponse (Just (DiagnosisMessage _ _ (x:xs))) =
+printNegativeResponses xs =
+  forM_ xs $ \x -> 
+    when (isNegativeResponse x) $ do
+      let (DiagnosisMessage _ _ (_:_:err:_)) = x
+      print err
+      print $ "negative response: " ++ nameOfError err
+
+isNegativeResponse (DiagnosisMessage _ _ (x:xs)) =
   x == negative_response_identifier
 
 liftReader a = ReaderT (return . runReader a)
 
-responsePending ::  Maybe HSFZMessage -> Bool
-responsePending = 
-  maybe False (\m->
-    let p = diagPayload (hsfz2diag m) in
-      length p == 3 && p!!0 == 0x7f && p!!2 == 0x78)
+responsePending ::  HSFZMessage -> Bool
+responsePending m = let p = diagPayload (hsfz2diag m) in
+      length p == 3 && p!!0 == 0x7f && p!!2 == 0x78
 
 
 -- Convenience.

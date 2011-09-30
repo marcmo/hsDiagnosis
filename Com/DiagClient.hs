@@ -15,12 +15,13 @@ module Com.DiagClient
 where
 
 import Com.DiagMessage
+import Data.Monoid
 import Com.HSFZMessage
 import Com.DiagBase
 import Diag.DiagnosisCodes
 import Network(PortID(PortNumber),connectTo)
 import System.IO hiding (hPutStrLn,hPutStr)
-import Data.ByteString.Char8 hiding (putStrLn,putStr)
+import Data.ByteString.Char8 hiding (putStrLn,putStr,length,head,tail,filter)
 import qualified Data.ByteString as S
 import Control.Concurrent(putMVar,MVar,forkIO,newEmptyMVar,takeMVar,yield)
 import Foreign(Ptr,Word8,free,mallocBytes)
@@ -33,16 +34,14 @@ import Util.Encoding
 import Debug.Trace
 import Prelude hiding (catch,log)
 
-sendData ::  DiagConfig -> [Word8] -> IO (Maybe DiagnosisMessage)
+sendData ::  DiagConfig -> [Word8] -> IO [DiagnosisMessage]
 sendData c xs = do
-  print $ "send to " ++ host c
+  when (verbose c) (print $ "send to " ++ host c)
   resp <- sendDiagMsg c False $ DiagnosisMessage (source c) (target c) xs
-  print $ show resp
-  when (isNegativeResponse resp) $ do
-    let (Just (DiagnosisMessage _ _ (_:_:err:_))) = resp
-    print err
-    print $ "negative response: " ++ nameOfError err
+  when (verbose c) (print $ show resp)
+  printNegativeResponses resp
   return resp
+
 
 sendDataAsync ::  DiagConfig -> [Word8] -> IO ()
 sendDataAsync c xs = do
@@ -50,23 +49,23 @@ sendDataAsync c xs = do
   sendDiagMsg c True $ DiagnosisMessage (source c) (target c) xs
   return ()
 
-sendDataTo :: DiagConfig -> [Word8] -> Word8 -> Word8 -> IO (Maybe DiagnosisMessage)
+sendDataTo :: DiagConfig -> [Word8] -> Word8 -> Word8 -> IO [DiagnosisMessage]
 sendDataTo c xs src target = (sendDiagMsg c False . DiagnosisMessage src target) xs
 
-sendBytes :: DiagConfig -> [Word8] -> IO (Maybe HSFZMessage)
+sendBytes :: DiagConfig -> [Word8] -> IO MessageStream
 sendBytes c = sendMessage c False . dataMessage
 
-sendDiagMsg :: DiagConfig -> Bool -> DiagnosisMessage -> IO (Maybe DiagnosisMessage)
+sendDiagMsg :: DiagConfig -> Bool -> DiagnosisMessage -> IO [DiagnosisMessage]
 sendDiagMsg c async dm = do
     let hsfzMsg = diag2hsfz dm DataBit
     hsfzResp <- sendMessage c async hsfzMsg
-    return $ maybe Nothing (Just . hsfz2diag) hsfzResp
+    return $ stream2diag hsfzResp
 
-sendMessage :: DiagConfig -> Bool -> HSFZMessage -> IO (Maybe HSFZMessage)
+sendMessage :: DiagConfig -> Bool -> HSFZMessage -> IO MessageStream
 sendMessage c async msg = bracket diagConnect disconnect loop
   where
     disconnect = hClose . diagHandle
-    loop st    = catch (runReaderT (run async msg) st) (\(_ :: IOException) -> return Nothing)
+    loop st    = catch (runReaderT (run async msg) st) (\(_ :: IOException) -> return mempty)
     diagConnect = notify $ do
         h <- connectTo (host c) (PortNumber $ fromIntegral (port c))
         hSetBuffering h NoBuffering
@@ -75,14 +74,15 @@ sendMessage c async msg = bracket diagConnect disconnect loop
       | verbose c = bracket_ (printf "Connecting to %s ... " (host c) >> hFlush stdout) (putStrLn "done.")
       | otherwise = bracket_ (return ()) (return ())
 
-run :: Bool -> HSFZMessage -> Net (Maybe HSFZMessage)
-run async msg = do
-    case async of
-      True -> pushOutMessage msg >> return Nothing
-      False -> do
+run :: Bool -> HSFZMessage -> Net MessageStream
+run async msg =
+    if async then pushOutMessage msg >> return mempty
+      else do
         m <- io newEmptyMVar
         ReaderT $ \r ->
-          forkIO $ catch (runReaderT (listenForResponse m) r) (\(e :: HsfzException) -> print e >> putMVar m Nothing >> return ())
+          forkIO $ catch
+                    (runReaderT (listenForResponse m) r)
+                    (\(e :: HsfzException) -> print e >> putMVar m mempty >> return ())
         -- io $ putStrLn "hickup"
         pushOutMessage msg
         io $ takeMVar m 
@@ -94,51 +94,51 @@ run async msg = do
         io $ hPutStr h (msg2ByteString msg)
         io $ hFlush h -- Make sure that we send data immediately
 
-listenForResponse ::  MVar (Maybe HSFZMessage) -> Net ()
+listenForResponse ::  MVar MessageStream -> Net ()
 listenForResponse m =
    do msg <- receiveResponse
       io $ putMVar m msg
       return ()
   where
 
-    receiveResponse :: Net (Maybe HSFZMessage)
+    receiveResponse :: Net MessageStream
     receiveResponse = do
         buf <- io $ mallocBytes receiveBufSize
-        dataResp <- receiveDataMsg buf
+        msgStream@(MessageStream xs) <- receiveDataMsg buf
         io $ free buf
-        if responsePending dataResp
-          then (log $ "...received response pending") >> receiveResponse
-          else return dataResp
+        if length xs == 1 && responsePending (head xs)
+          then log "...received response pending" >> receiveResponse
+          else return msgStream
 
-    receiveDataMsg ::  Ptr CChar -> Net (Maybe HSFZMessage)
+    receiveDataMsg ::  Ptr CChar -> Net MessageStream
     receiveDataMsg buf = do
-        msg <- receiveMsg buf 
-        maybe (return ()) (\m -> log $ "<-- " ++ show m) msg
-        maybe (return Nothing)
-          (\m->if isData m
-            then (log "was data!") >> return msg
-            else (log "was no data packet") >> receiveDataMsg buf) msg
+        stream@(MessageStream xs) <- receiveMsg buf 
+        if mempty == stream
+          then (log $ "<-- " ++ show stream) >> return stream
+          else do
+            if length (filter isData xs) > 0
+              then log "was data!" >> return stream
+              else log "was no data packet" >> receiveDataMsg buf
 
-    receiveMsg :: Ptr CChar -> Net (Maybe HSFZMessage)
+    receiveMsg :: Ptr CChar -> Net MessageStream
     receiveMsg buf = do
         h <- asks diagHandle
         timeout <- asks connectionTimeout
         log ("wait for data with timeout:" ++ show timeout ++ " ms\n")
         dataAvailable <- waitForData timeout
-        log ("\n")
-        if not dataAvailable then (io $ print "no message available...") >> return Nothing
+        log "\n"
+        if not dataAvailable then io (print "no message available...") >> return mempty
           else do
             answereBytesRead <- io $ hGetBufNonBlocking h buf receiveBufSize
             res2 <- io $ S.packCStringLen (buf,answereBytesRead)
-            log $ "received over the wire: " ++ (showBinString res2)
-            let resp = deserialize2Hsfz res2
-            return resp
+            log $ "received over the wire: " ++ showBinString res2
+            return $ deserialize2HsfzStream res2
 
-    waitForData ::  Int -> Net (Bool)
+    waitForData ::  Int -> Net Bool
     waitForData waitTime_ms = do
       h <- asks diagHandle
       io $ S.putStr "."
-      io $ yield
+      io yield
       -- log (".")
       inputAvailable <- io $ hWaitForInput h pollingMs
       if inputAvailable then return True 

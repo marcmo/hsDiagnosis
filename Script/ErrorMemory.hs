@@ -27,9 +27,10 @@ reset = sendData conf [0x11,0x1]
 
 readDid index = sendData conf ([0x22,0x20] ++ [index])
 
-interpretDtcs :: Maybe DiagnosisMessage -> IO ()
-interpretDtcs =  maybe (print "no valid response")
-                    (putStrLn . unlines . interprete . (drop 2) . diagPayload)
+interpretDtcs :: [DiagnosisMessage] -> IO ()
+interpretDtcs [] = print "no valid response"
+interpretDtcs (x:y:[]) = print "too many responses"
+interpretDtcs (x:[]) = (putStrLn . unlines . interprete . (drop 2) . diagPayload) x
 
 interprete :: [Word8] -> [String]
 interprete ps = ["status availability mask:" ++ showAsBin (head ps) ++ "(" ++ showAsHex (head ps) ++ ")"] ++
@@ -68,7 +69,7 @@ testDiagMsg = hsfz2diag testHsfzMsg
 testDiagMsg2 = hsfz2diag testHsfzMsg2
 testDiagMsg3 = hsfz2diag testHsfzMsg3
 
-test1 = mapM_ (interpretDtcs . Just) [testDiagMsg, testDiagMsg2, testDiagMsg3]
+test1 = mapM_ (interpretDtcs . return) [testDiagMsg, testDiagMsg2, testDiagMsg3]
 
 
 

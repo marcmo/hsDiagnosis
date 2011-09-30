@@ -6,7 +6,6 @@ import Network.BSD(hostAddresses,getHostByName)
 import System.IO
 import Data.List(genericDrop)
 import Control.Monad (liftM)
-import Control.Applicative((<$>))
 import Control.Exception
 import Foreign(Ptr,Word8,free,mallocBytes)
 import Foreign.C.Types(CChar)

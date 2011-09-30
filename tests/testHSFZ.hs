@@ -20,7 +20,8 @@ main = defaultMain tests
 tests = [
         testGroup "hsfz-msg Group" [
                 testProperty "serializing" prop_serializeDeserialize,
-                testProperty "deserializing" prop_deserializeserialize
+                testProperty "deserializing" prop_deserializeserialize,
+                testProperty "serializing stream" prop_serializeDeserializeStream
             ]
     ]
 
@@ -30,6 +31,9 @@ instance Arbitrary HSFZMessage where
     len <- choose (0,100)
     payload <- vectorOf len arbitrary -- :: Word8) 
     return $ HSFZMessage cbit len payload
+  shrink (HSFZMessage b len xs) = let half = div len 2 in
+    if half == 0 then []
+      else [HSFZMessage b (half) (drop (len - half) xs)]
 
 newtype HSFZBytes = MkBytes { bytes :: S.ByteString } deriving (Show)
 instance Arbitrary HSFZBytes where
@@ -49,6 +53,13 @@ prop_serializeDeserialize hsfzMsg =
   collect (payloadLen hsfzMsg) $
   (Just hsfzMsg) == eventualMsg
     where eventualMsg = deserialize2Hsfz $ msg2ByteString hsfzMsg
+
+prop_serializeDeserializeStream msgs =
+  stream == deserialized
+    where
+      stream = MessageStream msgs
+      serialized = serializeFromStream stream
+      deserialized = deserialize2HsfzStream serialized
 
 baseChars = [0..0xFF] 
 

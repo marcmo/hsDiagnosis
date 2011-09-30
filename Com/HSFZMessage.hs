@@ -12,6 +12,7 @@ import Data.Serialize.Get
 import Data.Serialize.Put
 import Data.Serialize
 import Data.Typeable
+import Data.Monoid
 import Control.Exception
 import Debug.Trace
 
@@ -30,8 +31,16 @@ data HSFZMessage = HSFZMessage {
   payload :: [Word8]
 } deriving (Eq)
 
+newtype MessageStream = MessageStream { unstream :: [HSFZMessage] } deriving (Eq)
+instance Monoid MessageStream where
+  mempty = MessageStream []
+  (mappend) (MessageStream a) (MessageStream b) = MessageStream (a ++ b)
+
 instance Show HSFZMessage where
-  show (HSFZMessage _ _ xs) = showAsHexString xs
+  show (HSFZMessage b len xs) = "<" ++ show b ++ "," ++ show len ++ "> " ++ showAsHexString xs
+instance Show MessageStream where
+  show (MessageStream []) = ""
+  show (MessageStream (x:xs)) = show x ++ show (MessageStream xs)
 instance Serialize HSFZMessage where
   put m = do
     putWord32be $ fromIntegral $ payloadLen m
@@ -44,6 +53,16 @@ instance Serialize HSFZMessage where
     cbit <- getWord8
     payload <- getBytes (fromIntegral len)
     return $ HSFZMessage (int2control cbit) (fromIntegral len) (S.unpack payload)
+instance Serialize MessageStream where
+  put (MessageStream xs) = mapM_ put xs
+  get = do
+    m <- get :: Get HSFZMessage
+    restLen <- remaining
+    if restLen > 0
+    	then do
+    	  MessageStream xs <- get
+    	  return $ MessageStream (m:xs)
+    	else return $ MessageStream [m]
 
 dataMessage :: [Word8] -> HSFZMessage
 dataMessage xs = HSFZMessage DataBit (length xs) xs
@@ -66,6 +85,14 @@ deserialize2Hsfz s
   | otherwise = either (const Nothing) Just (runGet get s)
       where payloadLength = parseLength s
             invalid = (S.length s < headerLen) || (S.length s /= headerLen + payloadLength)
+
+deserialize2HsfzStream :: S.ByteString -> MessageStream
+deserialize2HsfzStream s = either
+    (const (MessageStream []))
+    (id)
+    (runGet get s)
+serializeFromStream :: MessageStream -> S.ByteString
+serializeFromStream = runPut . put
 
 parseLength :: S.ByteString -> Int
 parseLength s = either (const 0) fromIntegral $ runGet getWord32be s
