@@ -4,7 +4,7 @@ where
 
 import Com.DiagMessage
 import Data.Word
-import Util
+import Util.Encoding
 
 data TestCase = TestCase {
   name :: String,

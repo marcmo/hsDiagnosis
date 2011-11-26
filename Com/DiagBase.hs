@@ -3,19 +3,9 @@ module Com.DiagBase where
 import Com.DiagMessage
 import Com.HSFZMessage
 import Diag.DiagnosisCodes
-import Network(PortID(PortNumber),connectTo)
 import System.IO
-import Control.Concurrent(putMVar,MVar,forkIO,newEmptyMVar,takeMVar)
-import Foreign(Ptr,Word8,free,mallocBytes)
-import Foreign.C.String(peekCStringLen)
-import Foreign.C.Types(CChar)
+import Foreign(Word8)
 import Control.Monad.Reader
-import Control.Exception
-import Text.Printf(printf)
-import Util.Encoding(string2hex)
-import Maybe(isJust)
-import Control.Applicative((<$>))
-import Debug.Trace
 import Prelude hiding (catch,log)
 
 receiveBufSize = 4096 :: Int

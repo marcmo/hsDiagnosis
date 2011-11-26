@@ -4,7 +4,6 @@ module Main where
 import Control.Monad (unless,when)
 import Network.Socket hiding (recv)
 import qualified Data.ByteString as S
-import Data.Word(Word8)
 import Control.Concurrent(threadDelay)
 import Data.List(isPrefixOf)
 import Network.Socket.ByteString (recv, sendAll)

@@ -42,14 +42,14 @@ luaTest = LuaTest { script = def &= help "lua script to run" }
 parseTesterId ::  String -> Either ParseError Word8
 parseTesterId = parse hexnumber "(unknown)"
 parseDiagMsg ::  String -> Either ParseError [Word8]
-parseDiagMsg input = parse hexlist "(unknown)" input
+parseDiagMsg = parse hexlist "(unknown)"
 hexlist :: CharParser () [Word8]
 hexlist = between (char '[') (char ']') (hexnumber `sepBy` char ',')
-hexnumber = fst . head . readHex <$> (skipMany (string "0x") *> many1 (hexDigit))
+hexnumber = fst . head . readHex <$> (skipMany (string "0x") *> many1 hexDigit)
 
 main ::  IO ()
 main = withSocketsDo $ do 
-  actions <- cmdArgs $ ((modes [diagSend,dtc,logging,diagTest,luaTest])
+  actions <- cmdArgs $ (modes [diagSend,dtc,logging,diagTest,luaTest]
                       &= summary "DiagnosisTool 0.3.0, (c) Oliver Mueller 2010-2011")
                       &= verbosity
   execute actions
@@ -68,7 +68,7 @@ execute (DiagTest ip s) = do
 execute (LuaTest s) = do
     print $ "running lua script " ++ s
     executeLuaScript s
-execute (Diagsend ip diagid m) = do
+execute (Diagsend ip diagid m) =
   case parseTesterId diagid of
     (Right tid) ->  do  let config = mkConf tid ip
                         case parseDiagMsg m of

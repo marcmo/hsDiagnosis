@@ -6,6 +6,7 @@ module Com.DiagClient
       sendBytes,
       sendDiagMsg,
       sendData,
+      sendMessage,
       sendDataAsync,
       sendDataTo,
       string2hex,
@@ -18,20 +19,17 @@ import Com.DiagMessage
 import Data.Monoid
 import Com.HSFZMessage
 import Com.DiagBase
-import Diag.DiagnosisCodes
 import Network(PortID(PortNumber),connectTo)
 import System.IO hiding (hPutStrLn,hPutStr)
 import Data.ByteString.Char8 hiding (putStrLn,putStr,length,head,tail,filter)
 import qualified Data.ByteString as S
 import Control.Concurrent(putMVar,MVar,forkIO,newEmptyMVar,takeMVar,yield)
 import Foreign(Ptr,Word8,free,mallocBytes)
-import Foreign.C.String(peekCStringLen)
 import Foreign.C.Types(CChar)
 import Control.Monad.Reader
 import Control.Exception
 import Text.Printf(printf)
 import Util.Encoding
-import Debug.Trace
 import Prelude hiding (catch,log)
 
 sendData ::  DiagConfig -> [Word8] -> IO [DiagnosisMessage]
@@ -114,8 +112,8 @@ listenForResponse m =
     receiveDataMsg buf = do
         stream@(MessageStream xs) <- receiveMsg buf 
         if mempty == stream
-          then (log $ "<-- " ++ show stream) >> return stream
-          else do
+          then log ("<-- " ++ show stream) >> return stream
+          else
             if length (filter isData xs) > 0
               then log "was data!" >> return stream
               else log "was no data packet" >> receiveDataMsg buf

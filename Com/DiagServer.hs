@@ -3,11 +3,9 @@ module Com.DiagServer where
 import Network (listenOn, withSocketsDo, accept, PortID(..), Socket)
 import qualified Network.Socket as NS
 import System (getArgs)
-import System.IO (hSetBuffering, hGetLine, hPutStrLn, BufferMode(..), Handle)
 import Control.Concurrent (forkIO)
 import Control.Concurrent.MVar
-import System.IO (hSetBuffering, hGetLine, hPutStrLn, BufferMode(..), Handle)
-import IO
+import System.IO
 
 type HandlerFunc = NS.SockAddr -> String -> IO ()
 
@@ -16,7 +14,7 @@ main = withSocketsDo $ do
     args <- getArgs
     let port = fromIntegral (read $ head args :: Int)
     sock <- listenOn $ PortNumber port
-    putStrLn $ "Listening on " ++ (head args)
+    putStrLn $ "Listening on " ++ head args
     sockHandler sock
 
 sockHandler :: Socket -> IO ()
@@ -31,19 +29,18 @@ commandProcessor handle = do
     line <- hGetLine handle
     let cmd = words line
     print cmd
-    case (head cmd) of
+    case head cmd of
         ("echo") -> print "was echo" >> echoCommand handle cmd
         ("add") -> addCommand handle cmd
-        _ -> do print "s.th. else..." >> hPutStrLn handle "Unknown command"
+        _ -> print "s.th. else..." >> hPutStrLn handle "Unknown command"
     commandProcessor handle
 
 echoCommand :: Handle -> [String] -> IO ()
-echoCommand handle cmd = do
-    hPutStrLn handle (unwords $ tail cmd)
+echoCommand handle cmd = hPutStrLn handle (unwords $ tail cmd)
 
 addCommand :: Handle -> [String] -> IO ()
-addCommand handle cmd = do
-    hPutStrLn handle $ show $ (read $ cmd !! 1) + (read $ cmd !! 2)
+addCommand handle cmd =
+    hPutStrLn handle $ show $ read (cmd !! 1) + read (cmd !! 2)
 
 
 serveDiagnosis :: String -> HandlerFunc -> IO ()

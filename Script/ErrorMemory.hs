@@ -10,12 +10,9 @@ import Com.HSFZMessage
 import Com.DiagMessage(hsfz2diag, DiagnosisMessage)
 import DiagnosticConfig(femConfig)
 import Util.Encoding
-import System.IO
--- import Text.Regex.PCRE.Light(match,compile)
-import qualified Data.ByteString.Char8 as B
-import Data.Maybe
 
-conf = femConfig "localhost"
+-- conf = femConfig "localhost"
+conf = femConfig "10.40.39.22"
 
 readSecondaryErrorMemory c = sendData c [0x22,0x20,0x00] >>= interpretDtcs
 readPrimaryErrorMemory c = sendData c [0x19,0x02,0x0f] >>= interpretDtcs

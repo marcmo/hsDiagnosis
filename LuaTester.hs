@@ -46,7 +46,7 @@ dofile s name = do
 dostring :: Lua.LuaState -> (Int,Int) -> String -> IO Int
 dostring s (params,returns) str = do
     res <- Lua.loadstring s str ""
-    Lua.pcall s 0 params returns
+    Lua.pcall s params returns 0
     return res
 
 executeLuaScript script = do

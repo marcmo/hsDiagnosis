@@ -2,9 +2,7 @@ module Script.LoggingFramework
 where
 import Com.DiagClient
 import DiagnosticConfig
-import Data.Maybe(isJust,fromJust)
 import Util.Encoding
-import Util.Timer
 
 data LoggingInstruction = DISABLEALL
                         | ENABLEALL

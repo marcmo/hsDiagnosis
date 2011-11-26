@@ -1,19 +1,14 @@
 import Test.Framework (defaultMain, testGroup)
-import Test.Framework.Providers.HUnit
 import Test.Framework.Providers.QuickCheck2 (testProperty)
 
 import Data.Word(Word8)
 import Data.List
-import Util.Encoding(int2Word8)
 import Control.Applicative((<$>))
 import qualified Data.ByteString as S
-import Data.Bits
 import Test.QuickCheck hiding ((.&.))
-import Test.HUnit
 import Com.HSFZMessage
 import Com.DiagMessage
 import Util.Encoding
-import Debug.Trace
 
 main = defaultMain tests
 

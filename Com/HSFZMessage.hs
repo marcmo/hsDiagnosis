@@ -4,7 +4,6 @@ module Com.HSFZMessage
 where
 
 import Data.Word(Word8)
-import Data.List(intersperse)
 import Util.Encoding(showBinString,showAsHexString)
 import qualified Data.ByteString as S
 import qualified Data.ByteString.Lazy as L
@@ -14,15 +13,16 @@ import Data.Serialize
 import Data.Typeable
 import Data.Monoid
 import Control.Exception
-import Debug.Trace
 
 headerLen = 6
 
-data ControlBit = AckBit | DataBit deriving (Show,Eq)
-control2Int DataBit = 1 :: Word8
-control2Int AckBit = 2 :: Word8
-int2control 1 = DataBit
-int2control 2 = AckBit
+data ControlBit = AckBit | DataBit | GetVehicleIdentBit deriving (Show,Eq)
+control2Int DataBit = 0x1 :: Word8
+control2Int AckBit = 0x2 :: Word8
+control2Int GetVehicleIdentBit = 0x11 :: Word8
+int2control 0x1 = DataBit
+int2control 0x2 = AckBit
+int2control 0x11 = GetVehicleIdentBit
 int2control x = error $ "int2control not defined for: " ++ show x 
 
 data HSFZMessage = HSFZMessage {

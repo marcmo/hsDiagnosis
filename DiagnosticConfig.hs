@@ -2,10 +2,15 @@ module DiagnosticConfig
      (
       mkConf,
       conf,
+      broadcastConf,
       femConfig,
       zgwConfig,
+      msgTunnelConf,
       standardDiagTimeout,
-      currentIp
+      currentIp,
+      msgTunnelIp,
+      setIp,
+      getIp
      ) 
 
 where
@@ -15,15 +20,10 @@ import Data.IORef
 
 debug_on = False
 
-conf = femConfig ip_E
-zgwConf = zgwConfig ip_A
+conf = femConfig ip_A
+broadcastConf = femConfig "255.255.255.255"
 
-ip_A = "10.40.39.21"
-ip_B = "10.40.39.33"
-ip_C = "10.40.39.5"
-ip_D = "10.40.39.44"
-ip_E = "10.40.39.36"
-ip_F = "10.40.39.49"
+ip_A = "10.40.39.22"
 msgTunnelIp = "10.40.39.48"
 
 fem = 0x40

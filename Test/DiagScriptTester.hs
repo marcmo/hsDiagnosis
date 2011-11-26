@@ -1,16 +1,12 @@
 module Test.DiagScriptTester where
 
 import Test.DiagScriptParser
-import Com.DiagClient(sendData,diagPayload,DiagConfig(MkDiagConfig))
 import Control.Monad
-import Data.Maybe(fromJust)
 import Com.DiagClient
 import System.Environment (getArgs)
 import qualified Test.Framework as TF -- (defaultMainWithOpts, testGroup, Test)
 import Test.Framework.Providers.HUnit
 import qualified Test.HUnit as HUnit
-import Control.Monad.Reader
-import Data.Monoid(mempty)
 import DiagnosticConfig
 
 -- run with: runhaskell DiagScriptTester.hs "Script/nvramtest.skr" "10.40.39.68"
@@ -44,7 +40,6 @@ test2case ::  TestCase -> String -> IO ()
 test2case (TestCase n msg exp time s t) ip = do
   let conf = MkDiagConfig ip 6801 s t False standardDiagTimeout
   resp <- sendDataTo conf (diagPayload msg) s t
-  -- maybe (return ()) (\m->
-  maybe (HUnit.assertString "no response received") (\m->
-    HUnit.assertEqual n exp m) resp
+  if length resp == 0 then (HUnit.assertString "no response received")
+  	else (HUnit.assertEqual n exp (head resp))
 

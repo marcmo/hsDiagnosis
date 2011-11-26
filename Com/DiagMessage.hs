@@ -2,15 +2,9 @@ module Com.DiagMessage
 
 where
 
-import Text.Regex(splitRegex,mkRegex)
-import Numeric(showHex,readHex)
-import Data.Char(chr,ord)
 import Data.Word(Word8)
 import Util.Encoding
-import Debug.Trace
 import Com.HSFZMessage
-import Data.Bits
-import Data.List(intersperse,intercalate)
 
 
 data DiagnosisMessage = DiagnosisMessage {
@@ -19,15 +13,15 @@ data DiagnosisMessage = DiagnosisMessage {
   diagPayload :: [Word8]
 } deriving (Eq)
 instance Show DiagnosisMessage where
-  show (DiagnosisMessage s t xs)  = '[':(showAsHex s) ++ "][" ++ (showAsHex t) ++ "]"
-      ++ (showAsHexString xs)
+  show (DiagnosisMessage s t xs)  = '[':showAsHex s ++ "][" ++ showAsHex t ++ "]"
+      ++ showAsHexString xs
 
 diagMsg2bytes ::  DiagnosisMessage -> [Word8]
-diagMsg2bytes m = (diagSource m):(diagTarget m):(diagPayload m)
+diagMsg2bytes m = diagSource m:diagTarget m:diagPayload m
 
 matchPayload :: DiagnosisMessage -> [Word8] -> Bool
 matchPayload (DiagnosisMessage _ _ p) exp =
-  length p >= length exp && (take (length exp) p) == exp
+  length p >= length exp && take (length exp) p == exp
 
 diag2hsfz :: DiagnosisMessage -> ControlBit -> HSFZMessage
 diag2hsfz dm cb = HSFZMessage cb (length payload) payload

@@ -2,13 +2,10 @@ module Test.DiagScriptParser
 
 where 
 
-import Text.ParserCombinators.Parsec.Expr
 import qualified Text.ParserCombinators.Parsec.Token as P
-import Data.Char
 import Util.Encoding
 import Text.ParserCombinators.Parsec.Language
 import Com.DiagMessage
-import Control.Monad
 import Data.Word(Word8)
 import Control.Applicative
 import Text.ParserCombinators.Parsec hiding (many, optional, (<|>))

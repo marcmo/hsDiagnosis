@@ -4,7 +4,7 @@ where
 
 import Test.DiagnosisTestCase
 import DiagnosticConfig
-import Util
+import Util.Encoding
 import Data.Word
 import Control.Monad
 import Data.Maybe
