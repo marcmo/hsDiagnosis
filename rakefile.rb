@@ -19,16 +19,17 @@ module OS
   end
 end
 
-MainHs="Main.hs"
-LuaMainHs="LuaMain.hs"
-DiagScripterHs="DiagScripterMain.hs"
 if OS.unix?
   def exeName(n) File.join(Out,n) end
 else
   def exeName(n) File.join(Out,"#{n}.exe") end
 end
+
+MainHs="Main.hs"
+LuaMainHs="LuaMain.hs"
+DiagScripterHs="DiagScripterMain.hs"
 DiagTool = exeName "diagTool"
-LuaScripter = exeName "lua_scripter"
+LuaScripter = exeName "luaexecuter"
 DiagScripter = exeName "diag_scripter"
 
 ProfArgs={
