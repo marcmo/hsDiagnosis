@@ -1,11 +1,16 @@
 print("loading base.lua")
+--print("arg",arg)
+--print("arg[0]",arg[0])
+--local bin = (arg and arg[0] or ''):gsub('[/\\]?[^/\\]+$', '')
+--if bin == '' then bin = '.' end 
+--print("bin = ",bin)
 require "Diagnosis"
 require "loggingSupport"
 local logger = logging.new(function(self, level, message)
                              print(level, message)
                              return true
                            end)
-logger:setLevel (logging.WARN)
+logger:setLevel (logging.DEBUG)
 
 function wireformat2msg(m)
   assert(type(m)=="string","invalid message format")
@@ -138,4 +143,35 @@ local function test()
   print("as msg:",Diag.tostring(ms2))
   assert(ms==ms2,"message needs to be the same after conversion-round-trip")
 end
+
+function table_slice (values,i1,i2)
+  local res = {}
+  local n = #values
+  -- default values for range
+  i1 = i1 or 1
+  i2 = i2 or n
+  if i2 < 0 then
+    i2 = n + i2 + 1
+  elseif i2 > n then
+    i2 = n
+  end
+  if i1 < 1 or i1 > n then
+    return {}
+  end
+  local k = 1
+  for i = i1,i2 do
+    res[k] = values[i]
+    k = k + 1
+  end
+  return res
+end
+
+function lastN(values,n)
+  local s = table.getn(values)
+  if n > s then error("not enough elements in list")
+  else
+    return table_slice(values,s-(n-1),s)
+  end
+end
+
 --test()

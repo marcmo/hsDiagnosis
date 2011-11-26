@@ -1,7 +1,7 @@
 require("base")
 require("Diagnosis")
 
-local ip = "10.40.39.12"
+local ip = "10.40.39.22"
 setIp(ip)
 
 local msg = Diag.new{0x22,0xF1,0x90}
