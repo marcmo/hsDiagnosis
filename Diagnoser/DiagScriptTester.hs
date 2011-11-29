@@ -1,6 +1,6 @@
-module Test.DiagScriptTester where
+module Diagnoser.DiagScriptTester where
 
-import Test.DiagScriptParser
+import Diagnoser.DiagScriptParser
 import Control.Monad
 import Com.DiagClient
 import System.Environment (getArgs)

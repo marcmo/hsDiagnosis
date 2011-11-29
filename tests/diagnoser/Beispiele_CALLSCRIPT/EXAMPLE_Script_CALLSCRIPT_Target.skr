@@ -1,0 +1,1 @@
+DIAG [ReadDataByIdentifier_3] SEND [22,F1,90] EXPECT [*] TIMEOUT [1400]

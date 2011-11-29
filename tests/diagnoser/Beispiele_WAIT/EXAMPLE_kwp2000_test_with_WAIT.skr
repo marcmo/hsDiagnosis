@@ -1,0 +1,9 @@
+//KWP2000: Tests the most important diagnosis features
+
+DIAG [11_ECU_RESET_POWERON] SEND [11,01] EXPECT [51,*] TIMEOUT [2000]
+WAIT [3000]
+DIAG [11_ECU_RESET_RESTSTATUS] SEND [11,80] EXPECT [51,*] TIMEOUT [2000]
+DIAG [1A_ReadEcuIdentification] SEND [1A,80] EXPECT [5A,*] TIMEOUT [2000]
+WAIT [2000] 
+DIAG [28_DisableNormalMessageTransmission] SEND [28,01] EXPECT [68] TIMEOUT [2000]
+DIAG [29_EnableNormalMessageTransmission] SEND [29,01] EXPECT [69] TIMEOUT [2000]

@@ -12,7 +12,7 @@ import Numeric(showHex,readHex)
 import Util.Encoding
 import Data.Word
 import LuaTester(executeLuaScript)
-import Test.DiagScriptTester(runTestScript)
+import Diagnoser.DiagScriptTester(runTestScript)
 import Text.ParserCombinators.Parsec hiding (many, optional, (<|>))
 import Text.Parsec.Token
 import Control.Applicative

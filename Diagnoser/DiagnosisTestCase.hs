@@ -1,4 +1,4 @@
-module Test.DiagnosisTestCase
+module Diagnoser.DiagnosisTestCase
 
 where
 

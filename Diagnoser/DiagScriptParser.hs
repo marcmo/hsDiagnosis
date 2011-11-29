@@ -1,4 +1,4 @@
-module Test.DiagScriptParser
+module Diagnoser.DiagScriptParser
 
 where 
 
@@ -13,10 +13,10 @@ import Text.ParserCombinators.Parsec hiding (many, optional, (<|>))
 data ScriptElement = ScriptTestCase TestCase
                    | Loop String Int [ScriptElement]
                    | Group String [ScriptElement]
-  deriving Show
+  deriving (Show,Eq)
 data DiagScript = DiagScript {
   scriptElements :: [ScriptElement]
-} deriving (Show)
+} deriving (Show,Eq)
 data TestCase = TestCase {
   caseName :: String,
   sendMsg  :: DiagnosisMessage,
@@ -24,7 +24,7 @@ data TestCase = TestCase {
   timeout  :: Int,
   source   :: Word8,
   target   :: Word8
-} deriving (Show)
+} deriving (Show,Eq)
 mkTestCase n m e time s t = TestCase n sendM exp time s t
   where sendM = DiagnosisMessage s t m
         exp = DiagnosisMessage t s e

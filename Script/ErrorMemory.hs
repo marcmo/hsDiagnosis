@@ -11,8 +11,8 @@ import Com.DiagMessage(hsfz2diag, DiagnosisMessage)
 import DiagnosticConfig(femConfig)
 import Util.Encoding
 
--- conf = femConfig "localhost"
-conf = femConfig "10.40.39.22"
+conf = femConfig "localhost"
+-- conf = femConfig "10.40.39.22"
 
 readSecondaryErrorMemory c = sendData c [0x22,0x20,0x00] >>= interpretDtcs
 readPrimaryErrorMemory c = sendData c [0x19,0x02,0x0f] >>= interpretDtcs

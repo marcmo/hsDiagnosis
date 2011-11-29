@@ -1,8 +1,8 @@
-module Test.TestCaseExecuter
+module Diagnoser.TestCaseExecuter
 
 where
 
-import Test.DiagnosisTestCase
+import Diagnoser.DiagnosisTestCase
 import DiagnosticConfig
 import Util.Encoding
 import Data.Word

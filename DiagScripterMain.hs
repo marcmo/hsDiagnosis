@@ -6,7 +6,7 @@ import Com.DiagClient(host)
 import DiagnosticConfig(conf)
 import Control.Monad (when)
 import Network.Socket
-import Test.DiagScriptTester(runTestScript)
+import Diagnoser.DiagScriptTester(runTestScript)
 
 data DiagScripter = DiagTest {
   script :: String,
