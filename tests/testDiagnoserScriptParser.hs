@@ -7,16 +7,27 @@ import Text.Parsec.Error
 import Diagnoser.DiagScriptParser
 
 main = do
-  loopAssertion          <- generalTest testLoopFull          "tests/diagnoser/implemented/loopSimple.skr"
-  loopNestedAssertion    <- assertionTest loopNestedResult    "tests/diagnoser/implemented/loopNested.skr"
-  groupNestedAssertion   <- assertionTest groupNestedResult   "tests/diagnoser/implemented/groupNested.skr"
+  testCaseAssertion         <- assertionTest testCaseExplicitResult  "tests/diagnoser/implemented/diagExplicit.skr"
+  loopAssertion             <- generalTest   testLoopExplicit        "tests/diagnoser/implemented/loopSimple.skr"
+  loopNestedAssertion       <- assertionTest loopNestedResult        "tests/diagnoser/implemented/loopNested.skr"
+  groupNestedAssertion      <- assertionTest groupNestedResult       "tests/diagnoser/implemented/groupNested.skr"
+  groupNumberNameAssertion  <- assertionTest groupNumberNameResult   "tests/diagnoser/implemented/groupNumberName.skr"
+  waitSimpleAssertion       <- assertionTest waitSimpleResult        "tests/diagnoser/implemented/waitSimple.skr"
+  useractionSimpleAssertion <- assertionTest useractionSimpleResult  "tests/diagnoser/implemented/useractionSimple.skr"
   let tests = [
               testGroup "diagnoser-script Group" [
+                        testGroup "testCase (DIAG)"
+                                  [testCase "testCase (DIAG) construct (test written expcicitly)"  testCaseAssertion],
                         testGroup "loops"
-                                  [testCase "simple loop construct with detailed test" loopAssertion,
+                                  [testCase "simple loop construct (test written expcicitly)" loopAssertion,
                                    testCase "nested loop construct" loopNestedAssertion],
                         testGroup "groups"
-                                  [testCase "groupSimple construct" groupNestedAssertion]
+                                  [testCase "nested group construct" groupNestedAssertion,
+                                   testCase "simple group construct with a number as name" groupNumberNameAssertion],
+                        testGroup "wait"
+                                  [testCase "simple wait construct" waitSimpleAssertion],
+                        testGroup "useraction"
+                                  [testCase "simple useraction construct" waitSimpleAssertion]
         ]]
   defaultMain tests
 
@@ -24,6 +35,29 @@ type ParsedSkript    = Either ParseError SP.DiagScript
 type SkriptAssertion = ParsedSkript -> HU.Assertion 
 --data SkriptTest      = SkriptTest SkriptAssertion FilePath
 
+
+
+testCaseExplicitResult :: DiagScript -> Bool
+testCaseExplicitResult (SP.DiagScript 
+                        [(SP.ScriptTestCase ( 
+                         SP.TestCase "abc" diagMsg diagMsgExpect 2000 0xA0 0xB0))]) = True
+                        where 
+                          diagMsg       = DiagnosisMessage 0xA0 0xB0 [0x1,0x2,0x3]
+                          diagMsgExpect = DiagnosisMessage 0xB0 0xA0 [0xaa,0xbb,0xcc]
+testCaseExplicitResult _         = False
+
+
+tempResult :: DiagScript -> Bool
+tempResult (SP.DiagScript [_]) = True
+tempResult _                   = False
+
+useractionSimpleResult :: DiagScript -> Bool
+useractionSimpleResult (SP.DiagScript [Useraction "Dieser Text wird als MsgBox angezeigt!"]) = True
+useractionSimpleResult _                   = False
+
+waitSimpleResult :: DiagScript -> Bool
+waitSimpleResult (SP.DiagScript [Wait 1000]) = True
+waitSimpleResult  _                = False 
 
 
 loopNestedResult :: DiagScript -> Bool
@@ -34,6 +68,11 @@ loopNestedResult (SP.DiagScript
                          [SP.ScriptTestCase _]]]) = True
 loopNestedResult  _                               = False 
 
+
+groupNumberNameResult :: DiagScript -> Bool
+groupNumberNameResult (SP.DiagScript 
+                          [SP.Group "1" _ ]) = True
+groupNumberNameResult  _                     = False 
 
 
 groupNestedResult :: DiagScript -> Bool
@@ -46,8 +85,8 @@ groupNestedResult  _                                  = False
 
 
          
-testLoopFull ::  SkriptAssertion
-testLoopFull parseResult =
+testLoopExplicit ::  SkriptAssertion
+testLoopExplicit parseResult =
   let diagMsg       = DiagnosisMessage 0xA0 0xB0 [0x1,0x2,0x3]
       diagMsgExpect = DiagnosisMessage 0xB0 0xA0 [0xaa,0xbb,0xcc]
       expected      = SP.DiagScript {
@@ -83,3 +122,13 @@ generalTest testAssertion file  = do
   return $ testAssertion s
 
 
+-- Function for quickly comparing input from .skr file and parsed Output
+devTest :: String -> IO ()
+devTest f = do
+  s <- readFile f
+  let p = SP.parseScript s  
+  putStrLn s 
+  putStrLn $ show p 
+
+
+useract = "tests/diagnoser/implemented/useractionSimple.skr"

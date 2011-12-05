@@ -13,6 +13,8 @@ import Text.ParserCombinators.Parsec hiding (many, optional, (<|>))
 data ScriptElement = ScriptTestCase TestCase
                    | Loop String Int [ScriptElement]
                    | Group String [ScriptElement]
+                   | Wait  Int
+                   | Useraction String
   deriving (Show,Eq)
 data DiagScript = DiagScript {
   scriptElements :: [ScriptElement]
@@ -52,7 +54,7 @@ reservedOp = P.reservedOp lexer
 -- loopstart  ::= "LOOPSTART" name "COUNT" number
 -- loopend    ::= "LOOPEND" name
 -- test       ::= testname sendmsg expect timeout source target
-namechars = ['a'..'z']++['A'..'Z']++"_,- "
+namechars = ['a'..'z']++['A'..'Z']++"_,- "++['0'..'9']
 nameInBrackets = brackets (many1 $ oneOf namechars)
 diagscript :: Parser DiagScript
 diagscript = do
@@ -61,19 +63,25 @@ diagscript = do
 
 scriptelem :: Parser ScriptElement
 scriptelem = do reserved "LOOPSTART"
-                p <- nameInBrackets
+                n <- nameInBrackets
                 reserved "COUNT"
-                n <- brackets (many1 digit)
-                cases <- many testcase
+                num <- brackets (many1 digit)
+                ss <- many scriptelem
                 reserved "LOOPEND"
-                brackets (string p)
-                return $ Loop p (read n) (map ScriptTestCase cases)
+                brackets (string n)
+                return $ Loop n (read num) ss
          <|> do reserved "GROUPSTART"
                 n <- nameInBrackets
                 ss <- many1 scriptelem
                 reserved "GROUPEND"
                 brackets (string n)
                 return $ Group n ss
+         <|> do reserved "WAIT"
+                num <- brackets (many1 digit)
+                return $ Wait (read num)
+         <|> do reserved "USERACTION"
+                txt <- parens parseString
+                return $ Useraction txt
          <|> ScriptTestCase <$> testcase
          <?> "scriptelement"
                 
@@ -88,6 +96,14 @@ testcase =
 
 hexList ::  CharParser () [Word8]
 hexList = brackets $ (sepBy hexNum (symbol ","))
+
+
+--parseString :: Stream s m Char => ParsecT s u m LispVal
+-- TODO: check if a native Parsec function exits for this
+parseString = do char '"'
+                 x <- many (noneOf "\"")
+                 char '"'
+                 return  x
 
 hexNum ::  GenParser Char st Word8
 hexNum = do s <- many1 (oneOf (['0'..'9']++['a'..'f']++['A'..'F']))
