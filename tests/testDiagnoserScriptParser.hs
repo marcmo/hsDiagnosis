@@ -115,3 +115,10 @@ generalTest testAssertion file  = do
   return $ testAssertion s
 
 
+-- Function for quickly comparing input from .skr file and parsed Output
+devTest :: String -> IO ()
+devTest f = do
+  s <- readFile f
+  let p = SP.parseScript s  
+  putStrLn s 
+  putStrLn $ show p 
