@@ -7,13 +7,16 @@ import Text.Parsec.Error
 import Diagnoser.DiagScriptParser
 
 main = do
-  loopAssertion          <- generalTest testLoopFull          "tests/diagnoser/implemented/loopSimple.skr"
-  loopNestedAssertion    <- assertionTest loopNestedResult    "tests/diagnoser/implemented/loopNested.skr"
-  groupNestedAssertion   <- assertionTest groupNestedResult   "tests/diagnoser/implemented/groupNested.skr"
+  testCaseAssertion      <- assertionTest testCaseExplicitResult "tests/diagnoser/implemented/diagExplicit.skr"
+  loopAssertion          <- generalTest testLoopExplicit         "tests/diagnoser/implemented/loopSimple.skr"
+  loopNestedAssertion    <- assertionTest loopNestedResult       "tests/diagnoser/implemented/loopNested.skr"
+  groupNestedAssertion   <- assertionTest groupNestedResult      "tests/diagnoser/implemented/groupNested.skr"
   let tests = [
               testGroup "diagnoser-script Group" [
+                        testGroup "testCase (DIAG)"
+                                  [testCase "testCase (DIAG) construct (test written expcicitly)"  testCaseAssertion],
                         testGroup "loops"
-                                  [testCase "simple loop construct with detailed test" loopAssertion,
+                                  [testCase "simple loop construct (test written expcicitly)" loopAssertion,
                                    testCase "nested loop construct" loopNestedAssertion],
                         testGroup "groups"
                                   [testCase "groupSimple construct" groupNestedAssertion]
@@ -23,6 +26,17 @@ main = do
 type ParsedSkript    = Either ParseError SP.DiagScript
 type SkriptAssertion = ParsedSkript -> HU.Assertion 
 --data SkriptTest      = SkriptTest SkriptAssertion FilePath
+
+
+
+testCaseExplicitResult :: DiagScript -> Bool
+testCaseExplicitResult (SP.DiagScript 
+                        [(SP.ScriptTestCase ( 
+                         SP.TestCase "abc" diagMsg diagMsgExpect 2000 0xA0 0xB0))]) = True
+                        where 
+                          diagMsg       = DiagnosisMessage 0xA0 0xB0 [0x1,0x2,0x3]
+                          diagMsgExpect = DiagnosisMessage 0xB0 0xA0 [0xaa,0xbb,0xcc]
+testCaseExplicitResult _         = False
 
 
 
@@ -46,8 +60,8 @@ groupNestedResult  _                                  = False
 
 
          
-testLoopFull ::  SkriptAssertion
-testLoopFull parseResult =
+testLoopExplicit ::  SkriptAssertion
+testLoopExplicit parseResult =
   let diagMsg       = DiagnosisMessage 0xA0 0xB0 [0x1,0x2,0x3]
       diagMsgExpect = DiagnosisMessage 0xB0 0xA0 [0xaa,0xbb,0xcc]
       expected      = SP.DiagScript {
