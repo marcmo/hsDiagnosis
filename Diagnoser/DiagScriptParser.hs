@@ -14,6 +14,7 @@ data ScriptElement = ScriptTestCase TestCase
                    | Loop String Int [ScriptElement]
                    | Group String [ScriptElement]
                    | Wait  Int
+                   | Useraction String
   deriving (Show,Eq)
 data DiagScript = DiagScript {
   scriptElements :: [ScriptElement]
@@ -78,6 +79,9 @@ scriptelem = do reserved "LOOPSTART"
          <|> do reserved "WAIT"
                 num <- brackets (many1 digit)
                 return $ Wait (read num)
+         <|> do reserved "USERACTION"
+                txt <- parens parseString
+                return $ Useraction txt
          <|> ScriptTestCase <$> testcase
          <?> "scriptelement"
                 
@@ -92,6 +96,14 @@ testcase =
 
 hexList ::  CharParser () [Word8]
 hexList = brackets $ (sepBy hexNum (symbol ","))
+
+
+--parseString :: Stream s m Char => ParsecT s u m LispVal
+-- TODO: check if a native Parsec function exits for this
+parseString = do char '"'
+                 x <- many (noneOf "\"")
+                 char '"'
+                 return  x
 
 hexNum ::  GenParser Char st Word8
 hexNum = do s <- many1 (oneOf (['0'..'9']++['a'..'f']++['A'..'F']))

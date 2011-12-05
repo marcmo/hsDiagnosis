@@ -7,12 +7,13 @@ import Text.Parsec.Error
 import Diagnoser.DiagScriptParser
 
 main = do
-  testCaseAssertion        <- assertionTest testCaseExplicitResult  "tests/diagnoser/implemented/diagExplicit.skr"
-  loopAssertion            <- generalTest   testLoopExplicit        "tests/diagnoser/implemented/loopSimple.skr"
-  loopNestedAssertion      <- assertionTest loopNestedResult        "tests/diagnoser/implemented/loopNested.skr"
-  groupNestedAssertion     <- assertionTest groupNestedResult       "tests/diagnoser/implemented/groupNested.skr"
-  groupNumberNameAssertion <- assertionTest groupNumberNameResult   "tests/diagnoser/implemented/groupNumberName.skr"
-  waitSimpleAssertion      <- assertionTest waitSimpleResult        "tests/diagnoser/implemented/waitSimple.skr"
+  testCaseAssertion         <- assertionTest testCaseExplicitResult  "tests/diagnoser/implemented/diagExplicit.skr"
+  loopAssertion             <- generalTest   testLoopExplicit        "tests/diagnoser/implemented/loopSimple.skr"
+  loopNestedAssertion       <- assertionTest loopNestedResult        "tests/diagnoser/implemented/loopNested.skr"
+  groupNestedAssertion      <- assertionTest groupNestedResult       "tests/diagnoser/implemented/groupNested.skr"
+  groupNumberNameAssertion  <- assertionTest groupNumberNameResult   "tests/diagnoser/implemented/groupNumberName.skr"
+  waitSimpleAssertion       <- assertionTest waitSimpleResult        "tests/diagnoser/implemented/waitSimple.skr"
+  useractionSimpleAssertion <- assertionTest useractionSimpleResult  "tests/diagnoser/implemented/useractionSimple.skr"
   let tests = [
               testGroup "diagnoser-script Group" [
                         testGroup "testCase (DIAG)"
@@ -24,7 +25,9 @@ main = do
                                   [testCase "nested group construct" groupNestedAssertion,
                                    testCase "simple group construct with a number as name" groupNumberNameAssertion],
                         testGroup "wait"
-                                  [testCase "simple wait construct" waitSimpleAssertion]
+                                  [testCase "simple wait construct" waitSimpleAssertion],
+                        testGroup "useraction"
+                                  [testCase "simple useraction construct" waitSimpleAssertion]
         ]]
   defaultMain tests
 
@@ -47,6 +50,10 @@ testCaseExplicitResult _         = False
 tempResult :: DiagScript -> Bool
 tempResult (SP.DiagScript [_]) = True
 tempResult _                   = False
+
+useractionSimpleResult :: DiagScript -> Bool
+useractionSimpleResult (SP.DiagScript [Useraction "Dieser Text wird als MsgBox angezeigt!"]) = True
+useractionSimpleResult _                   = False
 
 waitSimpleResult :: DiagScript -> Bool
 waitSimpleResult (SP.DiagScript [Wait 1000]) = True
@@ -122,3 +129,6 @@ devTest f = do
   let p = SP.parseScript s  
   putStrLn s 
   putStrLn $ show p 
+
+
+useract = "tests/diagnoser/implemented/useractionSimple.skr"
