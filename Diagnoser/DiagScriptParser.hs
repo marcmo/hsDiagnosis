@@ -13,6 +13,7 @@ import Text.ParserCombinators.Parsec hiding (many, optional, (<|>))
 data ScriptElement = ScriptTestCase TestCase
                    | Loop String Int [ScriptElement]
                    | Group String [ScriptElement]
+                   | Wait  Int
   deriving (Show,Eq)
 data DiagScript = DiagScript {
   scriptElements :: [ScriptElement]
@@ -74,6 +75,9 @@ scriptelem = do reserved "LOOPSTART"
                 reserved "GROUPEND"
                 brackets (string n)
                 return $ Group n ss
+         <|> do reserved "WAIT"
+                num <- brackets (many1 digit)
+                return $ Wait (read num)
          <|> ScriptTestCase <$> testcase
          <?> "scriptelement"
                 

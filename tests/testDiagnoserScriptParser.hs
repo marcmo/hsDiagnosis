@@ -12,6 +12,7 @@ main = do
   loopNestedAssertion      <- assertionTest loopNestedResult        "tests/diagnoser/implemented/loopNested.skr"
   groupNestedAssertion     <- assertionTest groupNestedResult       "tests/diagnoser/implemented/groupNested.skr"
   groupNumberNameAssertion <- assertionTest groupNumberNameResult   "tests/diagnoser/implemented/groupNumberName.skr"
+  waitSimpleAssertion      <- assertionTest waitSimpleResult        "tests/diagnoser/implemented/waitSimple.skr"
   let tests = [
               testGroup "diagnoser-script Group" [
                         testGroup "testCase (DIAG)"
@@ -21,7 +22,9 @@ main = do
                                    testCase "nested loop construct" loopNestedAssertion],
                         testGroup "groups"
                                   [testCase "nested group construct" groupNestedAssertion,
-                                   testCase "simple group construct with a number as name" groupNumberNameAssertion]
+                                   testCase "simple group construct with a number as name" groupNumberNameAssertion],
+                        testGroup "wait"
+                                  [testCase "simple wait construct" waitSimpleAssertion]
         ]]
   defaultMain tests
 
@@ -40,6 +43,14 @@ testCaseExplicitResult (SP.DiagScript
                           diagMsgExpect = DiagnosisMessage 0xB0 0xA0 [0xaa,0xbb,0xcc]
 testCaseExplicitResult _         = False
 
+
+tempResult :: DiagScript -> Bool
+tempResult (SP.DiagScript [_]) = True
+tempResult _                   = False
+
+waitSimpleResult :: DiagScript -> Bool
+waitSimpleResult (SP.DiagScript [Wait 1000]) = True
+waitSimpleResult  _                = False 
 
 
 loopNestedResult :: DiagScript -> Bool
