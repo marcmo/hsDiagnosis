@@ -61,13 +61,13 @@ diagscript = do
 
 scriptelem :: Parser ScriptElement
 scriptelem = do reserved "LOOPSTART"
-                p <- nameInBrackets
+                n <- nameInBrackets
                 reserved "COUNT"
-                n <- brackets (many1 digit)
-                cases <- many testcase
+                num <- brackets (many1 digit)
+                ss <- many scriptelem
                 reserved "LOOPEND"
-                brackets (string p)
-                return $ Loop p (read n) (map ScriptTestCase cases)
+                brackets (string n)
+                return $ Loop n (read num) ss
          <|> do reserved "GROUPSTART"
                 n <- nameInBrackets
                 ss <- many1 scriptelem
