@@ -52,7 +52,7 @@ reservedOp = P.reservedOp lexer
 -- loopstart  ::= "LOOPSTART" name "COUNT" number
 -- loopend    ::= "LOOPEND" name
 -- test       ::= testname sendmsg expect timeout source target
-namechars = ['a'..'z']++['A'..'Z']++"_,- "
+namechars = ['a'..'z']++['A'..'Z']++"_,- "++['0'..'9']
 nameInBrackets = brackets (many1 $ oneOf namechars)
 diagscript :: Parser DiagScript
 diagscript = do

@@ -7,10 +7,11 @@ import Text.Parsec.Error
 import Diagnoser.DiagScriptParser
 
 main = do
-  testCaseAssertion      <- assertionTest testCaseExplicitResult "tests/diagnoser/implemented/diagExplicit.skr"
-  loopAssertion          <- generalTest testLoopExplicit         "tests/diagnoser/implemented/loopSimple.skr"
-  loopNestedAssertion    <- assertionTest loopNestedResult       "tests/diagnoser/implemented/loopNested.skr"
-  groupNestedAssertion   <- assertionTest groupNestedResult      "tests/diagnoser/implemented/groupNested.skr"
+  testCaseAssertion        <- assertionTest testCaseExplicitResult  "tests/diagnoser/implemented/diagExplicit.skr"
+  loopAssertion            <- generalTest   testLoopExplicit        "tests/diagnoser/implemented/loopSimple.skr"
+  loopNestedAssertion      <- assertionTest loopNestedResult        "tests/diagnoser/implemented/loopNested.skr"
+  groupNestedAssertion     <- assertionTest groupNestedResult       "tests/diagnoser/implemented/groupNested.skr"
+  groupNumberNameAssertion <- assertionTest groupNumberNameResult   "tests/diagnoser/implemented/groupNumberName.skr"
   let tests = [
               testGroup "diagnoser-script Group" [
                         testGroup "testCase (DIAG)"
@@ -19,7 +20,8 @@ main = do
                                   [testCase "simple loop construct (test written expcicitly)" loopAssertion,
                                    testCase "nested loop construct" loopNestedAssertion],
                         testGroup "groups"
-                                  [testCase "groupSimple construct" groupNestedAssertion]
+                                  [testCase "nested group construct" groupNestedAssertion,
+                                   testCase "simple group construct with a number as name" groupNumberNameAssertion]
         ]]
   defaultMain tests
 
@@ -48,6 +50,11 @@ loopNestedResult (SP.DiagScript
                          [SP.ScriptTestCase _]]]) = True
 loopNestedResult  _                               = False 
 
+
+groupNumberNameResult :: DiagScript -> Bool
+groupNumberNameResult (SP.DiagScript 
+                          [SP.Group "1" _ ]) = True
+groupNumberNameResult  _                     = False 
 
 
 groupNestedResult :: DiagScript -> Bool
