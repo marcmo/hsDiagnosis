@@ -6,9 +6,10 @@ import qualified Text.ParserCombinators.Parsec.Token as P
 import Util.Encoding
 import Text.ParserCombinators.Parsec.Language
 import Com.DiagMessage
-import Data.Word(Word8)
+import Data.Word(Word8,Word16)
 import Control.Applicative
 import Text.ParserCombinators.Parsec hiding (many, optional, (<|>))
+
 
 data ScriptElement = ScriptTestCase TestCase
                    | Loop String Int [ScriptElement]
@@ -16,6 +17,8 @@ data ScriptElement = ScriptTestCase TestCase
                    | Wait  Int
                    | Useraction String
                    | Callscript FilePath [Parameter]
+--                   | ScriptCanMsg CanMsg
+                   | CanMsg String Word16 [Word8]
   deriving (Show,Eq)
 data DiagScript = DiagScript {
   scriptElements :: [ScriptElement]
@@ -28,6 +31,18 @@ data TestCase = TestCase {
   source   :: Word8,
   target   :: Word8
 } deriving (Show,Eq)
+
+
+-- data CanMsg = CanMsg {
+--   name    :: String,
+--   id      :: Word16,
+--   dataMsg :: DiagnosisMessage}deriving (Show,Eq)
+
+--data CanMsg = CanMsg String Word16 [Word8]
+--              deriving (Show,Eq)
+
+
+
 type ParaName = String
 type ParaValue = [Word8]
 --type ParaValue = String
@@ -98,14 +113,23 @@ scriptelem = do reserved "LOOPSTART"
                 whiteSpace
                 pL <- option [] parameterList
                 return $ Callscript path pL
+         <|> do reserved "CANMSG"
+                n <- nameInBrackets
+                reserved "ID"
+                id <- brackets hexNum16
+                reserved "DATA"
+                dat <- hexList
+                return $ CanMsg n 13 []      
          <|> ScriptTestCase <$> testcase
          <?> "scriptelement"
+
+
 
 -- TODO: make filePath match windows/unix file paths
 filePath ::  CharParser () String
 filePath = (many1 $ noneOf "\"\r\n ")
 
-parameter ::  GenParser Char st Parameter
+parameter ::  GenParser Char () Parameter
 parameter = do char '"'
                name <- (many1 $ oneOf namechars)
                char '"'; char '=';  char '"'
@@ -117,8 +141,8 @@ parameter = do char '"'
 parameterList ::  CharParser () [Parameter]
 parameterList = brackets $ (sepBy parameter (symbol ";"))
 
-hexListNoBrackets ::  CharParser st [Word8]
-hexListNoBrackets = (sepBy hexNum (char ','))
+hexListNoBrackets ::  CharParser () [Word8]
+hexListNoBrackets = (sepBy hexNum (symbol ","))
 
                 
 testcase :: Parser TestCase
@@ -147,6 +171,11 @@ parseString = do char '"'
 hexNum ::  GenParser Char st Word8
 hexNum = do s <- many1 (oneOf (['0'..'9']++['a'..'f']++['A'..'F']))
             return $ string2hex s
+
+hexNum16 ::  GenParser Char st Word16
+hexNum16 = do s <- many1 (oneOf (['0'..'9']++['a'..'f']++['A'..'F']))
+              return $ string2hex16 s
+
 
 run :: Show a => Parser a -> String -> IO ()
 run p input =

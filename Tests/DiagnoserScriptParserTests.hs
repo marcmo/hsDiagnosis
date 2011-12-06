@@ -26,6 +26,7 @@ diagnoserScripterTests = do
   callscriptSimpleAssertion <- assertionTest callscriptSimpleResult  (scriptPath ++ "/callscriptSimple.skr")
   callscriptWithParameterAssertion <- assertionTest callscriptWithParameterResult  (scriptPath ++ "/callscriptWithParameter.skr")
   callscriptWithParametersAssertion <- assertionTest callscriptWithParametersResult  (scriptPath ++ "/callscriptWithParameters.skr")
+  canmsgSimpleAssertion     <- assertionTest canmsgSimpleResult  (scriptPath ++ "/canmsgSimple.skr")
 
   return $ testGroup "diagnoser-script Group" [
                         testGroup "testCase (DIAG)"
@@ -43,7 +44,10 @@ diagnoserScripterTests = do
                         testGroup "callscript"
                                   [testCase "simple callscript construct" callscriptSimpleAssertion,
                                    testCase "simple callscript construct with one Parameters" callscriptWithParameterAssertion,
-                                   testCase "simple callscript construct with Parameters" callscriptWithParametersAssertion]
+                                   testCase "simple callscript construct with Parameters" callscriptWithParametersAssertion],
+                        testGroup "canmsg"
+                                  [testCase "simple canmsg construct"   canmsgSimpleAssertion]
+
          ]
 
 
@@ -66,6 +70,11 @@ testCaseExplicitResult _         = False
 tempResult :: DiagScript -> Bool
 tempResult (SP.DiagScript [_]) = True
 tempResult _                   = False
+
+
+canmsgSimpleResult :: DiagScript -> Bool
+canmsgSimpleResult (SP.DiagScript [_]) = True
+canmsgSimpleResult _                   = False
 
 
 callscriptSimpleResult :: DiagScript -> Bool
@@ -164,4 +173,4 @@ devTest f = do
   putStrLn $ show p 
 
 
-useract = "tests/diagnoser/implemented/useractionSimple.skr"
+current = (scriptPath ++ "/canmsgSimple.skr")

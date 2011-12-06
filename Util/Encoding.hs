@@ -27,6 +27,10 @@ encodeLength len =
 string2hex ::  String -> Word8
 string2hex = fst . head . readHex
 
+string2hex16 ::  String -> Word16
+string2hex16 = fst . head . readHex
+
+
 showAsHex ::  Word8 -> String
 showAsHex = ((++) "0x") . (flip showHex "")
 
