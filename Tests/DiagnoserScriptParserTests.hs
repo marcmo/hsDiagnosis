@@ -73,7 +73,7 @@ tempResult _                   = False
 
 
 canmsgSimpleResult :: DiagScript -> Bool
-canmsgSimpleResult (SP.DiagScript [_]) = True
+canmsgSimpleResult (SP.DiagScript [CanMsg "CAN_1" 0x6F1 [0x11,0x22,0x33,0x44]]) = True
 canmsgSimpleResult _                   = False
 
 

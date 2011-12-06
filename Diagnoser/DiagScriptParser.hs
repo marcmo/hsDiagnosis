@@ -17,8 +17,8 @@ data ScriptElement = ScriptTestCase TestCase
                    | Wait  Int
                    | Useraction String
                    | Callscript FilePath [Parameter]
---                   | ScriptCanMsg CanMsg
                    | CanMsg String Word16 [Word8]
+                   | CyclicCanMsg String Word16 [Word8] Int [ScriptElement]
   deriving (Show,Eq)
 data DiagScript = DiagScript {
   scriptElements :: [ScriptElement]
@@ -119,7 +119,7 @@ scriptelem = do reserved "LOOPSTART"
                 id <- brackets hexNum16
                 reserved "DATA"
                 dat <- hexList
-                return $ CanMsg n 13 []      
+                return $ CanMsg n id dat      
          <|> ScriptTestCase <$> testcase
          <?> "scriptelement"
 
