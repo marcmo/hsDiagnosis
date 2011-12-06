@@ -23,6 +23,10 @@ diagnoserScripterTests = do
   groupNumberNameAssertion  <- assertionTest groupNumberNameResult   (scriptPath ++ "/groupNumberName.skr")
   waitSimpleAssertion       <- assertionTest waitSimpleResult        (scriptPath ++ "/waitSimple.skr")
   useractionSimpleAssertion <- assertionTest useractionSimpleResult  (scriptPath ++ "/useractionSimple.skr")
+  callscriptSimpleAssertion <- assertionTest callscriptSimpleResult  (scriptPath ++ "/callscriptSimple.skr")
+  callscriptWithParameterAssertion <- assertionTest callscriptWithParameterResult  (scriptPath ++ "/callscriptWithParameter.skr")
+  callscriptWithParametersAssertion <- assertionTest callscriptWithParametersResult  (scriptPath ++ "/callscriptWithParameters.skr")
+
   return $ testGroup "diagnoser-script Group" [
                         testGroup "testCase (DIAG)"
                                   [testCase "testCase (DIAG) construct (test written expcicitly)"  testCaseAssertion],
@@ -35,8 +39,13 @@ diagnoserScripterTests = do
                         testGroup "wait"
                                   [testCase "simple wait construct" waitSimpleAssertion],
                         testGroup "useraction"
-                                  [testCase "simple useraction construct" waitSimpleAssertion]
-        ]
+                                  [testCase "simple useraction construct" waitSimpleAssertion],
+                        testGroup "callscript"
+                                  [testCase "simple callscript construct" callscriptSimpleAssertion,
+                                   testCase "simple callscript construct with one Parameters" callscriptWithParameterAssertion,
+                                   testCase "simple callscript construct with Parameters" callscriptWithParametersAssertion]
+         ]
+
 
 type ParsedSkript    = Either ParseError SP.DiagScript
 type SkriptAssertion = ParsedSkript -> HU.Assertion 
@@ -57,6 +66,23 @@ testCaseExplicitResult _         = False
 tempResult :: DiagScript -> Bool
 tempResult (SP.DiagScript [_]) = True
 tempResult _                   = False
+
+
+callscriptSimpleResult :: DiagScript -> Bool
+callscriptSimpleResult (SP.DiagScript [Callscript "EXAMPLE_Script_CALLSCRIPT_Target.skr" []]) = True
+callscriptResult _                         = False
+
+
+callscriptWithParameterResult :: DiagScript -> Bool
+callscriptWithParameterResult (SP.DiagScript [Callscript _ [_]]) = True
+callscriptWithParameterResult _                   = False
+
+
+callscriptWithParametersResult :: DiagScript -> Bool
+callscriptWithParametersResult (SP.DiagScript [Callscript _ [_,_,_]]) = True
+callscriptWithParametersResult _                   = False
+
+
 
 useractionSimpleResult :: DiagScript -> Bool
 useractionSimpleResult (SP.DiagScript [Useraction "Dieser Text wird als MsgBox angezeigt!"]) = True
