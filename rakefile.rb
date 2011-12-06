@@ -77,9 +77,9 @@ namespace "lua" do
   task :run => LuaScripter
 end
 
-desc "run all quickCheck testcases"
+desc "run all testcases"
 task :test do
-  sh 'runhaskell tests/testHSFZ.hs'
+  sh 'runhaskell Tests/testMain.hs'
 end
 
 def stripExec (x)

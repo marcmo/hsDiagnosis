@@ -1,21 +1,29 @@
+module Tests.DiagnoserScriptParserTests
+  (
+      diagnoserScripterTests
+  )
+where
+
 import qualified Diagnoser.DiagScriptParser as SP
 import Com.DiagMessage
 import qualified Test.HUnit as HU
-import Test.Framework (defaultMain, testGroup)
+import Test.Framework (testGroup, Test)
 import Test.Framework.Providers.HUnit (testCase)
 import Text.Parsec.Error
 import Diagnoser.DiagScriptParser
 
-main = do
-  testCaseAssertion         <- assertionTest testCaseExplicitResult  "tests/diagnoser/implemented/diagExplicit.skr"
-  loopAssertion             <- generalTest   testLoopExplicit        "tests/diagnoser/implemented/loopSimple.skr"
-  loopNestedAssertion       <- assertionTest loopNestedResult        "tests/diagnoser/implemented/loopNested.skr"
-  groupNestedAssertion      <- assertionTest groupNestedResult       "tests/diagnoser/implemented/groupNested.skr"
-  groupNumberNameAssertion  <- assertionTest groupNumberNameResult   "tests/diagnoser/implemented/groupNumberName.skr"
-  waitSimpleAssertion       <- assertionTest waitSimpleResult        "tests/diagnoser/implemented/waitSimple.skr"
-  useractionSimpleAssertion <- assertionTest useractionSimpleResult  "tests/diagnoser/implemented/useractionSimple.skr"
-  let tests = [
-              testGroup "diagnoser-script Group" [
+scriptPath = "Tests/diagnoser/implemented"
+
+diagnoserScripterTests :: IO Test
+diagnoserScripterTests = do
+  testCaseAssertion         <- assertionTest testCaseExplicitResult  (scriptPath ++ "/diagExplicit.skr")
+  loopAssertion             <- generalTest   testLoopExplicit        (scriptPath ++ "/loopSimple.skr")
+  loopNestedAssertion       <- assertionTest loopNestedResult        (scriptPath ++ "/loopNested.skr")
+  groupNestedAssertion      <- assertionTest groupNestedResult       (scriptPath ++ "/groupNested.skr")
+  groupNumberNameAssertion  <- assertionTest groupNumberNameResult   (scriptPath ++ "/groupNumberName.skr")
+  waitSimpleAssertion       <- assertionTest waitSimpleResult        (scriptPath ++ "/waitSimple.skr")
+  useractionSimpleAssertion <- assertionTest useractionSimpleResult  (scriptPath ++ "/useractionSimple.skr")
+  return $ testGroup "diagnoser-script Group" [
                         testGroup "testCase (DIAG)"
                                   [testCase "testCase (DIAG) construct (test written expcicitly)"  testCaseAssertion],
                         testGroup "loops"
@@ -28,8 +36,7 @@ main = do
                                   [testCase "simple wait construct" waitSimpleAssertion],
                         testGroup "useraction"
                                   [testCase "simple useraction construct" waitSimpleAssertion]
-        ]]
-  defaultMain tests
+        ]
 
 type ParsedSkript    = Either ParseError SP.DiagScript
 type SkriptAssertion = ParsedSkript -> HU.Assertion 

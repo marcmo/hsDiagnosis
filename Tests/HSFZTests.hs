@@ -1,4 +1,10 @@
-import Test.Framework (defaultMain, testGroup)
+module Tests.HSFZTests
+  (
+      hsfzTests
+  )
+where
+
+import Test.Framework (testGroup)
 import Test.Framework.Providers.QuickCheck2 (testProperty)
 
 import Data.Word(Word8)
@@ -10,15 +16,11 @@ import Com.HSFZMessage
 import Com.DiagMessage
 import Util.Encoding
 
-main = defaultMain tests
-
-tests = [
-        testGroup "hsfz-msg Group" [
+hsfzTests = testGroup "hsfz-msg Group" [
                 testProperty "serializing" prop_serializeDeserialize,
                 testProperty "deserializing" prop_deserializeserialize,
                 testProperty "serializing stream" prop_serializeDeserializeStream
             ]
-    ]
 
 instance Arbitrary HSFZMessage where
   arbitrary = do
