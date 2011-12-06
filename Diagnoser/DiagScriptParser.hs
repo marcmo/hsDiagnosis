@@ -120,6 +120,18 @@ scriptelem = do reserved "LOOPSTART"
                 reserved "DATA"
                 dat <- hexList
                 return $ CanMsg n id dat      
+         <|> do reserved "STARTCYCLICCANMSG"
+                n   <- nameInBrackets
+                reserved "ID"
+                id  <- brackets hexNum16 
+                reserved "DATA"
+                dat <- hexList
+                reserved "CYCLE"
+                num <- brackets (many1 digit)
+                ss  <- many scriptelem
+                reserved "STOPCYCLICCANMSG"
+                brackets (string n)
+                return $ CyclicCanMsg n id dat (read num) ss
          <|> ScriptTestCase <$> testcase
          <?> "scriptelement"
 

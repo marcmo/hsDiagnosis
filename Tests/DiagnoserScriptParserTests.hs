@@ -27,6 +27,7 @@ diagnoserScripterTests = do
   callscriptWithParameterAssertion <- assertionTest callscriptWithParameterResult  (scriptPath ++ "/callscriptWithParameter.skr")
   callscriptWithParametersAssertion <- assertionTest callscriptWithParametersResult  (scriptPath ++ "/callscriptWithParameters.skr")
   canmsgSimpleAssertion     <- assertionTest canmsgSimpleResult  (scriptPath ++ "/canmsgSimple.skr")
+  canmsgCyclicAssertion     <- assertionTest canmsgCyclicResult  (scriptPath ++ "/canmsgCyclic.skr")
 
   return $ testGroup "diagnoser-script Group" [
                         testGroup "testCase (DIAG)"
@@ -46,7 +47,8 @@ diagnoserScripterTests = do
                                    testCase "simple callscript construct with one Parameters" callscriptWithParameterAssertion,
                                    testCase "simple callscript construct with Parameters" callscriptWithParametersAssertion],
                         testGroup "canmsg"
-                                  [testCase "simple canmsg construct"   canmsgSimpleAssertion]
+                                  [testCase "simple canmsg construct"   canmsgSimpleAssertion,
+                                   testCase "cyclic canmsg construct"   canmsgCyclicAssertion]
 
          ]
 
@@ -70,6 +72,11 @@ testCaseExplicitResult _         = False
 tempResult :: DiagScript -> Bool
 tempResult (SP.DiagScript [_]) = True
 tempResult _                   = False
+
+
+canmsgCyclicResult :: DiagScript -> Bool
+canmsgCyclicResult (SP.DiagScript [CyclicCanMsg "Klemme_15" 0x130 [0x05,0x00,0x00,0x00] 200 [Wait 1000]]) = True
+canmsgCyclicResult _                   = False
 
 
 canmsgSimpleResult :: DiagScript -> Bool
