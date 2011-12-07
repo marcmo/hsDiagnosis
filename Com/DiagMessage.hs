@@ -7,10 +7,36 @@ import Util.Encoding
 import Com.HSFZMessage
 
 
+
+data Match = Match Word8
+           | Star 
+           | Questioned String        
+     deriving (Eq,Show)
+
+
+type Expected = [[Match]]
+
+data ExpectedMsg  = ExpectedMsg  Expected
+                  | EveryAndNoMsg  -- corresponds to [#]
+                  | EveryMsg       -- corresponds to [*]
+                  | NoMsg          -- corresponds to [] 
+      deriving (Eq,Show)
+
+
+data ExpectedMessage = ExpectedMessage {
+  expectSource :: Word8,  -- ??? switch source and target ???
+  expectTarget :: Word8,
+  expectPayload :: ExpectedMsg
+} deriving (Eq,Show)
+
+
+
+
 data DiagnosisMessage = DiagnosisMessage {
   diagSource :: Word8,
   diagTarget :: Word8,
   diagPayload :: [Word8]
+
 } deriving (Eq)
 instance Show DiagnosisMessage where
   show (DiagnosisMessage s t xs)  = '[':showAsHex s ++ "][" ++ showAsHex t ++ "]"

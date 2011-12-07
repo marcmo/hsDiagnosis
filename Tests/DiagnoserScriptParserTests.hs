@@ -16,7 +16,15 @@ scriptPath = "Tests/diagnoser/implemented"
 
 diagnoserScripterTests :: IO Test
 diagnoserScripterTests = do
-  testCaseAssertion         <- assertionTest testCaseExplicitResult  (scriptPath ++ "/diagExplicit.skr")
+  testCaseAssertion         <- assertionTest testCaseExplicitResult      (scriptPath ++ "/diagExplicit.skr")
+  testCaseNoneAssertion     <- assertionTest testCaseNoneResult          (scriptPath ++ "/diagNone.skr") -- working but shouldn't
+  testCaseEveryAssertion    <- assertionTest testCaseEveryResult         (scriptPath ++ "/diagEvery.skr")
+  testCaseEoNAssertion      <- assertionTest testCaseEveryOrNoneResult   (scriptPath ++ "/diagEveryOrNone.skr")
+  testCaseStarAssertion     <- assertionTest testCaseStarResult          (scriptPath ++ "/diagStar.skr")
+  testCaseQuestionAssertion <- assertionTest testCaseQuestionmarkResult  (scriptPath ++ "/diagQuestionmark.skr")
+  testCaseQHalfAssertion    <- assertionTest testCaseQuestionHalfResult  (scriptPath ++ "/diagQuestionHalf.skr")
+  testCaseWildcardAssertion <- assertionTest testCaseWildcardResult      (scriptPath ++ "/diagWildcard.skr")
+
   loopAssertion             <- generalTest   testLoopExplicit        (scriptPath ++ "/loopSimple.skr")
   loopNestedAssertion       <- assertionTest loopNestedResult        (scriptPath ++ "/loopNested.skr")
   groupNestedAssertion      <- assertionTest groupNestedResult       (scriptPath ++ "/groupNested.skr")
@@ -24,14 +32,22 @@ diagnoserScripterTests = do
   waitSimpleAssertion       <- assertionTest waitSimpleResult        (scriptPath ++ "/waitSimple.skr")
   useractionSimpleAssertion <- assertionTest useractionSimpleResult  (scriptPath ++ "/useractionSimple.skr")
   callscriptSimpleAssertion <- assertionTest callscriptSimpleResult  (scriptPath ++ "/callscriptSimple.skr")
-  callscriptWithParameterAssertion <- assertionTest callscriptWithParameterResult  (scriptPath ++ "/callscriptWithParameter.skr")
-  callscriptWithParametersAssertion <- assertionTest callscriptWithParametersResult  (scriptPath ++ "/callscriptWithParameters.skr")
-  canmsgSimpleAssertion     <- assertionTest canmsgSimpleResult  (scriptPath ++ "/canmsgSimple.skr")
-  canmsgCyclicAssertion     <- assertionTest canmsgCyclicResult  (scriptPath ++ "/canmsgCyclic.skr")
+  callscriptWithParameterAssertion <- assertionTest callscriptWithParameterResult   (scriptPath ++ "/callscriptWithParameter.skr")
+  callscriptWithParametersAssertion <- assertionTest callscriptWithParametersResult (scriptPath ++ "/callscriptWithParameters.skr")
+  canmsgSimpleAssertion     <- assertionTest canmsgSimpleResult      (scriptPath ++ "/canmsgSimple.skr")
+  canmsgCyclicAssertion     <- assertionTest canmsgCyclicResult      (scriptPath ++ "/canmsgCyclic.skr")
 
   return $ testGroup "diagnoser-script Group" [
                         testGroup "testCase (DIAG)"
-                                  [testCase "testCase (DIAG) construct (test written expcicitly)"  testCaseAssertion],
+                                  [testCase "testCase construct (test written expcicitly)"        testCaseAssertion
+                                  ,testCase "testCase construct (expected none)"                  testCaseNoneAssertion
+                                  ,testCase "testCase construct (expected every)"                 testCaseEveryAssertion
+                                  ,testCase "testCase construct (expected every or none)"         testCaseEoNAssertion
+                                  ,testCase "testCase construct (with star wildcard)"             testCaseStarAssertion
+                                  ,testCase "testCase construct (with questionmarks wildcard)"    testCaseQuestionAssertion
+                                  ,testCase "testCase construct (with one questionmark wildcard)" testCaseQHalfAssertion
+                                  ,testCase "testCase construct (with all wildcards)"             testCaseWildcardAssertion
+                                  ],
                         testGroup "loops"
                                   [testCase "simple loop construct (test written expcicitly)" loopAssertion,
                                    testCase "nested loop construct" loopNestedAssertion],
@@ -56,6 +72,74 @@ diagnoserScripterTests = do
 type ParsedSkript    = Either ParseError SP.DiagScript
 type SkriptAssertion = ParsedSkript -> HU.Assertion 
 --data SkriptTest      = SkriptTest SkriptAssertion FilePath
+
+
+testCaseNoneResult :: DiagScript -> Bool
+testCaseNoneResult (SP.DiagScript 
+                        [(SP.ScriptTestCase ( 
+                          SP.TestCase "abc" diagMsg _ 2000 0xA0 0xB0))])           = True
+                        where 
+                          diagMsg       = DiagnosisMessage 0xA0 0xB0 [0x1,0x2,0x3]
+                          diagMsgExpect = undefined
+testCaseNoneResult _                                                               = False
+
+testCaseEveryResult :: DiagScript -> Bool
+testCaseEveryResult (SP.DiagScript 
+                        [(SP.ScriptTestCase ( 
+                          SP.TestCase "abc" diagMsg _ 2000 0xA0 0xB0))])           = True
+                        where 
+                          diagMsg       = DiagnosisMessage 0xA0 0xB0 [0x1,0x2,0x3]
+                          diagMsgExpect = undefined
+testCaseEveryResult _                                                              = False
+
+testCaseEveryOrNoneResult :: DiagScript -> Bool
+testCaseEveryOrNoneResult (SP.DiagScript 
+                        [(SP.ScriptTestCase ( 
+                          SP.TestCase "abc" diagMsg _ 2000 0xA0 0xB0))])           = True
+                        where 
+                          diagMsg       = DiagnosisMessage 0xA0 0xB0 [0x1,0x2,0x3]
+                          diagMsgExpect = undefined
+testCaseEveryOrNoneResult _                                                        = False
+
+
+
+testCaseQuestionmarkResult :: DiagScript -> Bool
+testCaseQuestionmarkResult (SP.DiagScript 
+                        [(SP.ScriptTestCase ( 
+                          SP.TestCase "abc" diagMsg _ 2000 0xA0 0xB0))])           = True
+                        where 
+                          diagMsg       = DiagnosisMessage 0xA0 0xB0 [0x1,0x2,0x3]
+                          diagMsgExpect = undefined
+testCaseQuestionmarkResult _                                                       = False
+
+testCaseQuestionHalfResult :: DiagScript -> Bool
+testCaseQuestionHalfResult (SP.DiagScript 
+                        [(SP.ScriptTestCase ( 
+                          SP.TestCase "abc" diagMsg _ 2000 0xA0 0xB0))])           = True
+                        where 
+                          diagMsg       = DiagnosisMessage 0xA0 0xB0 [0x1,0x2,0x3]
+                          diagMsgExpect = undefined
+testCaseQuestionHalfResult _                                                       = False
+
+testCaseStarResult :: DiagScript -> Bool
+testCaseStarResult (SP.DiagScript 
+                        [(SP.ScriptTestCase ( 
+                          SP.TestCase "abc" diagMsg _ 2000 0xA0 0xB0))])           = True
+                        where 
+                          diagMsg       = DiagnosisMessage 0xA0 0xB0 [0x1,0x2,0x3]
+                          diagMsgExpect = undefined
+testCaseStarResult _                                                               = False
+
+
+
+testCaseWildcardResult :: DiagScript -> Bool
+testCaseWildcardResult (SP.DiagScript 
+                        [(SP.ScriptTestCase ( 
+                          SP.TestCase "abc" diagMsg _ 2000 0xA0 0xB0))])           = True
+                        where 
+                          diagMsg       = DiagnosisMessage 0xA0 0xB0 [0x1,0x2,0x3]
+                          diagMsgExpect = undefined
+testCaseWildcardResult _                                                           = False
 
 
 
