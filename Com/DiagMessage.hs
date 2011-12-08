@@ -17,7 +17,7 @@ data Match = Match Word8
 type Expected = [[Match]]
 
 data ExpectedMsg  = ExpectedMsg  Expected
-                  | EveryAndNoMsg  -- corresponds to [#]
+                  | EveryOrNoMsg  -- corresponds to [#]
                   | EveryMsg       -- corresponds to [*]
                   | NoMsg          -- corresponds to [] 
       deriving (Eq,Show)

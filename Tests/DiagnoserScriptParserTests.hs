@@ -221,7 +221,7 @@ groupNestedResult  _                                  = False
 testLoopExplicit ::  SkriptAssertion
 testLoopExplicit parseResult =
   let diagMsg       = DiagnosisMessage 0xA0 0xB0 [0x1,0x2,0x3]
-      diagMsgExpect = DiagnosisMessage 0xB0 0xA0 [0xaa,0xbb,0xcc]
+      diagMsgExpect = ExpectedMessage  0xA0 0xB0 (ExpectedMsg [[Match 15, Match 15 ,Match  15 ]]) --ExpectedMsg [[15,15,15]]
       expected      = SP.DiagScript {
         SP.scriptElements = [
           SP.Loop "loopA" 10 [
@@ -264,4 +264,4 @@ devTest f = do
   putStrLn $ show p 
 
 
-current = (scriptPath ++ "/canmsgSimple.skr")
+current = (scriptPath ++ "/loopSimple.skr")

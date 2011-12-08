@@ -26,11 +26,18 @@ data DiagScript = DiagScript {
 data TestCase = TestCase {
   caseName :: String,
   sendMsg  :: DiagnosisMessage,
-  expected :: DiagnosisMessage,
+  expected :: ExpectedMessage,
   timeout  :: Int,
   source   :: Word8,
   target   :: Word8
 } deriving (Show,Eq)
+
+
+type ParaName = String
+type ParaValue = [Word8]
+--type ParaValue = String
+data Parameter = Parameter ParaName ParaValue
+                  deriving (Show,Eq)
 
 
 -- data CanMsg = CanMsg {
@@ -43,17 +50,9 @@ data TestCase = TestCase {
 
 
 
-type ParaName = String
-type ParaValue = [Word8]
---type ParaValue = String
-data Parameter = Parameter ParaName ParaValue
-                  deriving (Show,Eq)
-
-
-
 mkTestCase n m e time s t = TestCase n sendM exp time s t
   where sendM = DiagnosisMessage s t m
-        exp = DiagnosisMessage t s e
+        exp = ExpectedMessage t s e
 
 
 lexer :: P.TokenParser ()
@@ -161,11 +160,39 @@ testcase :: Parser TestCase
 testcase =
    mkTestCase <$> (reserved "DIAG" *> nameInBrackets)
               <*> (reserved "SEND" *> hexList)
-              <*> (reserved "EXPECT" *> hexList)
+              <*> (reserved "EXPECT" *> expectedMsg)
               <*> (reserved "TIMEOUT" *> read `fmap` brackets (many1 digit))
               <*> (reserved "SOURCE" *> brackets hexNum)
               <*> (reserved "TARGET" *> brackets hexNum)
 
+
+hexNumMatch ::  GenParser Char () Match
+hexNumMatch = do s <- many1 (oneOf (['0'..'9']++['a'..'f']++['A'..'F']))
+                 return $ Match (string2hex s)
+
+match ::  GenParser Char () Match
+match = do s <- try (count 2(oneOf (['0'..'9']++['a'..'f']++['A'..'F'])))
+           return $ Match (string2hex s)
+    <|> do s <- try (char '*')
+           return $ Star 
+    <|> do s <- try (many1 (oneOf (['0'..'9']++['a'..'f']++['A'..'F']++['?'])))
+           return $ Questioned s
+
+hexListNoBracketsMatch ::  CharParser () [Match]
+hexListNoBracketsMatch = (sepBy match (symbol ","))
+
+
+expectedMsg :: GenParser Char () ExpectedMsg
+expectedMsg =  do try (brackets $ (char '*'))
+                  return $ EveryMsg
+           <|> do try (brackets $ (char '#'))
+                  return $ EveryOrNoMsg
+           <|> do ret <- try (brackets hexListNoBracketsMatch)
+                  return $ ExpectedMsg [ret]
+           <|> do nada <- try (brackets $ (string ""))
+                  return $ NoMsg
+
+         
 
 
 hexList ::  CharParser () [Word8]
@@ -179,6 +206,7 @@ parseString = do char '"'
                  x <- many (noneOf "\"")
                  char '"'
                  return  x
+
 
 hexNum ::  GenParser Char st Word8
 hexNum = do s <- many1 (oneOf (['0'..'9']++['a'..'f']++['A'..'F']))
