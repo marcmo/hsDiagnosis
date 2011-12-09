@@ -9,7 +9,7 @@ import Com.DiagMessage
 import Data.Word(Word8,Word16)
 import Control.Applicative
 import Text.ParserCombinators.Parsec hiding (many, optional, (<|>))
-
+import Data.Char
 
 data ScriptElement = ScriptTestCase TestCase
                    | Loop String Int [ScriptElement]
@@ -170,29 +170,34 @@ hexNumMatch ::  GenParser Char () Match
 hexNumMatch = do s <- many1 (oneOf (['0'..'9']++['a'..'f']++['A'..'F']))
                  return $ Match (string2hex s)
 
-match ::  GenParser Char () Match
-match = do s <- try (count 2(oneOf (['0'..'9']++['a'..'f']++['A'..'F'])))
-           return $ Match (string2hex s)
-    <|> do s <- try (char '*')
-           return $ Star 
-    <|> do s <- try (many1 (oneOf (['0'..'9']++['a'..'f']++['A'..'F']++['?'])))
-           return $ Questioned s
 
-hexListNoBracketsMatch ::  CharParser () [Match]
-hexListNoBracketsMatch = (sepBy match (symbol ","))
+
+match ::  GenParser Char () Match
+match = do s <- try (char '*')
+           return $ Star 
+       <|> do s <- try (count 2 (oneOf (['0'..'9']++['a'..'f']++['A'..'F'])))
+    --        s <- try (many1 (oneOf (['0'..'9']++['a'..'f']++['A'..'F'])))
+              return $ Match (string2hex s)
+       <|> do s <- try (count 2 (oneOf (['0'..'9']++['a'..'f']++['A'..'F']++['?'])))
+              return $ Questioned (map toUpper $ s)
+       <|> do s <- (oneOf (['0'..'9']++['a'..'f']++['A'..'F']))       
+              return $ Match (string2hex [s])
+       <?> "match" 
+
+matches ::  CharParser () [Match]
+matches = (sepBy match (symbol ","))
 
 
 expectedMsg :: GenParser Char () ExpectedMsg
-expectedMsg =  do try (brackets $ (char '*'))
+expectedMsg =  do try (brackets $ (string ""))
+                  return $ NoMsg
+           <|> do try (brackets $ (char '*'))
                   return $ EveryMsg
            <|> do try (brackets $ (char '#'))
                   return $ EveryOrNoMsg
-           <|> do ret <- try (brackets hexListNoBracketsMatch)
+           <|> do ret <- try (brackets matches)
                   return $ ExpectedMsg [ret]
-           <|> do nada <- try (brackets $ (string ""))
-                  return $ NoMsg
 
-         
 
 
 hexList ::  CharParser () [Word8]

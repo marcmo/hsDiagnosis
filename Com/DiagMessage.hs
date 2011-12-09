@@ -17,7 +17,7 @@ data Match = Match Word8
 type Expected = [[Match]]
 
 data ExpectedMsg  = ExpectedMsg  Expected
-                  | EveryOrNoMsg  -- corresponds to [#]
+                  | EveryOrNoMsg   -- corresponds to [#]
                   | EveryMsg       -- corresponds to [*]
                   | NoMsg          -- corresponds to [] 
       deriving (Eq,Show)
@@ -33,8 +33,8 @@ data ExpectedMessage = ExpectedMessage {
 
 
 data DiagnosisMessage = DiagnosisMessage {
-  diagSource :: Word8,
-  diagTarget :: Word8,
+  diagSource  :: Word8,
+  diagTarget  :: Word8,
   diagPayload :: [Word8]
 
 } deriving (Eq)

@@ -25,6 +25,8 @@ diagnoserScripterTests = do
   testCaseQuestionAssertion <- assertionTest testCaseQuestionmarkResult  (scriptPath ++ "/diagQuestionmark.skr")
   testCaseQHalfAssertion    <- assertionTest testCaseQuestionHalfResult  (scriptPath ++ "/diagQuestionHalf.skr")
   testCaseWildcardAssertion <- assertionTest testCaseWildcardResult      (scriptPath ++ "/diagWildcard.skr")
+  testCaseOneHexAssertion   <- assertionTest testOneHexResult            (scriptPath ++ "/diagOneHex.skr")
+
 
   loopAssertion             <- generalTest   testLoopExplicit        (scriptPath ++ "/loopSimple.skr")
   loopNestedAssertion       <- assertionTest loopNestedResult        (scriptPath ++ "/loopNested.skr")
@@ -48,6 +50,7 @@ diagnoserScripterTests = do
                                   ,testCase "testCase construct (with questionmarks wildcard)"    testCaseQuestionAssertion
                                   ,testCase "testCase construct (with one questionmark wildcard)" testCaseQHalfAssertion
                                   ,testCase "testCase construct (with all wildcards)"             testCaseWildcardAssertion
+                                  ,testCase "testCase construct (with only one hex number in skr)"testCaseOneHexAssertion
                                   ],
                         testGroup "loops"
                                   [testCase "simple loop construct (test written expcicitly)" loopAssertion,
@@ -73,33 +76,41 @@ type SkriptAssertion = ParsedSkript -> HU.Assertion
 
 testCaseNoneResult :: DiagScript -> Bool
 testCaseNoneResult (SP.DiagScript 
-                        [(SP.ScriptTestCase ( 
-                          SP.TestCase "abc"
-                            (DiagnosisMessage 0xA0 0xB0 [0x1,0x2,0x3]) _ 2000 0xA0 0xB0))])           = True
-testCaseNoneResult _                                                               = False
+                       [SP.ScriptTestCase ( 
+                         SP.TestCase "abc"
+                           (DiagnosisMessage 0xA0 0xB0 [0x1,0x2,0x3])
+                           (ExpectedMessage 0xB0 0xA0 NoMsg) 
+                           2000 0xA0 0xB0)])                           = True
+testCaseNoneResult _                                                   = False
 
 testCaseEveryResult :: DiagScript -> Bool
 testCaseEveryResult (SP.DiagScript 
-                        [SP.ScriptTestCase ( 
-                          SP.TestCase "abc" (DiagnosisMessage 0xA0 0xB0 [0x1,0x2,0x3]) _ 2000 0xA0 0xB0)])           = True
-testCaseEveryResult _                                                              = False
+                      [SP.ScriptTestCase ( 
+                         SP.TestCase "abc" 
+                           (DiagnosisMessage 0xA0 0xB0 [0x1,0x2,0x3]) 
+                           (ExpectedMessage 0xB0 0xA0 EveryMsg)  
+                           2000 0xA0 0xB0)])                          = True
+testCaseEveryResult _                                                 = False
 
 testCaseEveryOrNoneResult :: DiagScript -> Bool
 testCaseEveryOrNoneResult (SP.DiagScript 
-                        [SP.ScriptTestCase ( 
-                          SP.TestCase "abc" (DiagnosisMessage 0xA0 0xB0 [0x1,0x2,0x3]) _ 2000 0xA0 0xB0)])           = True
-testCaseEveryOrNoneResult _                                                        = False
+                             [SP.ScriptTestCase ( 
+                                SP.TestCase "abc" 
+                                  (DiagnosisMessage 0xA0 0xB0 [0x1,0x2,0x3]) 
+                                  (ExpectedMessage 0xB0 0xA0 EveryOrNoMsg)  
+                                  2000 0xA0 0xB0)])                    = True
+testCaseEveryOrNoneResult _                                            = False
 
 testCaseQuestionmarkResult :: DiagScript -> Bool
 testCaseQuestionmarkResult (SP.DiagScript 
-                        [SP.ScriptTestCase ( 
-                          SP.TestCase "abc" (DiagnosisMessage 0xA0 0xB0 [0x1,0x2,0x3]) _ 2000 0xA0 0xB0)])           = True
+                             [SP.ScriptTestCase ( 
+                               SP.TestCase _ _ (ExpectedMessage 0xB0 0xA0 (ExpectedMsg [[Match 0xaa,Questioned "??",Match 0xcc]]))  _ _ _)])           = True
 testCaseQuestionmarkResult _                                                       = False
 
 testCaseQuestionHalfResult :: DiagScript -> Bool
 testCaseQuestionHalfResult (SP.DiagScript 
-                        [SP.ScriptTestCase ( 
-                          SP.TestCase "abc" (DiagnosisMessage 0xA0 0xB0 [0x1,0x2,0x3]) _ 2000 0xA0 0xB0)])           = True
+                             [SP.ScriptTestCase ( 
+                               SP.TestCase _ _ (ExpectedMessage 0xB0 0xA0 (ExpectedMsg [[Match 0xaa,Questioned "F?",Match 0xcc]])) _ _ _)])           = True
                         where 
 testCaseQuestionHalfResult _                                                       = False
 
@@ -127,6 +138,13 @@ testCaseExplicitResult (SP.DiagScript
                           (ExpectedMessage 0xB0 0xA0 (ExpectedMsg [[Match 0xaa,Match 0xbb,Match 0xcc]]))
                           2000 0xA0 0xB0)]) = True
 testCaseExplicitResult _         = False
+
+testOneHexResult :: DiagScript -> Bool
+testOneHexResult (SP.DiagScript 
+                   [SP.ScriptTestCase ( 
+                     SP.TestCase _ (DiagnosisMessage 0xf0 0xf2 [0x31,0x0])
+                                   (ExpectedMessage  0xf2 0xf0 (ExpectedMsg [[Match 1,Match 2, Match 3]]))  _ _ _)])           = True
+testOneHexResult  _                                                           = False
 
 
 canmsgCyclicResult :: DiagScript -> Bool
@@ -207,7 +225,7 @@ generalAssertion :: ParsedSkript -> (DiagScript -> Bool) -> HU.Assertion
 generalAssertion parseResult checkResult =
   let mkTest = either
          (\error -> HU.assertBool ("was not parsed correctly:" ++ show error) False)                       
-         (HU.assertBool ("parsed correctly:") . checkResult)   in
+         (HU.assertBool "parsed correctly:" . checkResult)   in
   mkTest parseResult 
 
 
@@ -230,5 +248,5 @@ devTest f = do
   s <- readFile f
   let p = SP.parseScript s  
   putStrLn s 
-  putStrLn $ show p 
+  print p 
 
