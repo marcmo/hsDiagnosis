@@ -12,12 +12,15 @@ import Test.Framework (testGroup, Test)
 import Test.Framework.Providers.HUnit (testCase)
 import Text.Parsec.Error
 import Diagnoser.DiagScriptParser
+import Util.RecursiveContents
+import Control.Monad
 
 scriptPath = "Tests/diagnoser/implemented"
 
 diagnoserScripterTests :: IO Test
 diagnoserScripterTests = do
   testCaseAssertion         <- assertionTest testCaseExplicitResult      (scriptPath ++ "/diagExplicit.skr")
+  testCaseNoSTAssertion     <- assertionTest testCaseNoSTResult          (scriptPath ++ "/diagNoSourceTarget.skr")
   testCaseNoneAssertion     <- assertionTest testCaseNoneResult          (scriptPath ++ "/diagNone.skr") -- working but shouldn't
   testCaseEveryAssertion    <- assertionTest testCaseEveryResult         (scriptPath ++ "/diagEvery.skr")
   testCaseEoNAssertion      <- assertionTest testCaseEveryOrNoneResult   (scriptPath ++ "/diagEveryOrNone.skr")
@@ -26,7 +29,6 @@ diagnoserScripterTests = do
   testCaseQHalfAssertion    <- assertionTest testCaseQuestionHalfResult  (scriptPath ++ "/diagQuestionHalf.skr")
   testCaseWildcardAssertion <- assertionTest testCaseWildcardResult      (scriptPath ++ "/diagWildcard.skr")
   testCaseOneHexAssertion   <- assertionTest testOneHexResult            (scriptPath ++ "/diagOneHex.skr")
-
 
   loopAssertion             <- generalTest   testLoopExplicit        (scriptPath ++ "/loopSimple.skr")
   loopNestedAssertion       <- assertionTest loopNestedResult        (scriptPath ++ "/loopNested.skr")
@@ -39,10 +41,14 @@ diagnoserScripterTests = do
   callscriptWithParametersAssertion <- assertionTest callscriptWithParametersResult (scriptPath ++ "/callscriptWithParameters.skr")
   canmsgSimpleAssertion     <- assertionTest canmsgSimpleResult      (scriptPath ++ "/canmsgSimple.skr")
   canmsgCyclicAssertion     <- assertionTest canmsgCyclicResult      (scriptPath ++ "/canmsgCyclic.skr")
+  
+  waitExample       <- assertionTest allTrueResult              "Tests/diagnoser/Beispiele_WAIT/EXAMPLE_kwp2000_test_with_WAIT.skr"
+
 
   return $ testGroup "diagnoser-script Group" [
                         testGroup "testCase (DIAG)"
                                   [testCase "testCase construct (test written expcicitly)"        testCaseAssertion
+                                  ,testCase "testCase construct (WITHOUT source and target)"      testCaseNoSTAssertion
                                   ,testCase "testCase construct (expected none)"                  testCaseNoneAssertion
                                   ,testCase "testCase construct (expected every)"                 testCaseEveryAssertion
                                   ,testCase "testCase construct (expected every or none)"         testCaseEoNAssertion
@@ -68,56 +74,69 @@ diagnoserScripterTests = do
                                    testCase "simple callscript construct with Parameters" callscriptWithParametersAssertion],
                         testGroup "canmsg"
                                   [testCase "simple canmsg construct"   canmsgSimpleAssertion,
-                                   testCase "cyclic canmsg construct"   canmsgCyclicAssertion]
+                                   testCase "cyclic canmsg construct"   canmsgCyclicAssertion],
+                        testGroup "Examples"
+                                  [testCase "Wait Example" waitExample]
          ]
 
 type ParsedSkript    = Either ParseError SP.DiagScript
 type SkriptAssertion = ParsedSkript -> HU.Assertion 
 
+testCaseNoSTResult :: DiagScript -> Bool
+testCaseNoSTResult (SP.DiagScript 
+                       [SP.ScriptTestCase ( 
+                         SP.TestCase "11_ECU_RESET_POWERON"
+                           (DiagnosisMessageMaybe Nothing Nothing [0x11,0x01])
+                           (ExpectedMessage Nothing Nothing _) 
+                           2000 Nothing Nothing )])                           = True
+testCaseNoSTResult _                                                   = False
+
+
 testCaseNoneResult :: DiagScript -> Bool
 testCaseNoneResult (SP.DiagScript 
                        [SP.ScriptTestCase ( 
-                         SP.TestCase "abc"
-                           (DiagnosisMessage 0xA0 0xB0 [0x1,0x2,0x3])
-                           (ExpectedMessage 0xB0 0xA0 NoMsg) 
-                           2000 0xA0 0xB0)])                           = True
+                         SP.TestCase "abc" _
+--                           (DiagnosisMessage 0xA0 0xB0 [0x1,0x2,0x3])
+--                           (ExpectedMessage 0xB0 0xA0 NoMsg) 
+                           (ExpectedMessage _ _ NoMsg) 
+                           2000 _ _ )])                           = True
 testCaseNoneResult _                                                   = False
 
 testCaseEveryResult :: DiagScript -> Bool
 testCaseEveryResult (SP.DiagScript 
                       [SP.ScriptTestCase ( 
                          SP.TestCase "abc" 
-                           (DiagnosisMessage 0xA0 0xB0 [0x1,0x2,0x3]) 
-                           (ExpectedMessage 0xB0 0xA0 EveryMsg)  
-                           2000 0xA0 0xB0)])                          = True
+                           (DiagnosisMessageMaybe _ _ [0x1,0x2,0x3]) 
+                           (ExpectedMessage _ _ EveryMsg)  
+                           2000 _ _)])                          = True
 testCaseEveryResult _                                                 = False
 
 testCaseEveryOrNoneResult :: DiagScript -> Bool
 testCaseEveryOrNoneResult (SP.DiagScript 
                              [SP.ScriptTestCase ( 
                                 SP.TestCase "abc" 
-                                  (DiagnosisMessage 0xA0 0xB0 [0x1,0x2,0x3]) 
-                                  (ExpectedMessage 0xB0 0xA0 EveryOrNoMsg)  
-                                  2000 0xA0 0xB0)])                    = True
+                                  _ --(DiagnosisMessage 0xA0 0xB0 [0x1,0x2,0x3]) 
+                                  (ExpectedMessage _ _ EveryOrNoMsg)  
+                                  2000 _ _)])                    = True
 testCaseEveryOrNoneResult _                                            = False
 
 testCaseQuestionmarkResult :: DiagScript -> Bool
 testCaseQuestionmarkResult (SP.DiagScript 
                              [SP.ScriptTestCase ( 
-                               SP.TestCase _ _ (ExpectedMessage 0xB0 0xA0 (ExpectedMsg [[Match 0xaa,Questioned "??",Match 0xcc]]))  _ _ _)])           = True
+                               SP.TestCase _ _ (ExpectedMessage (Just 0xB0) (Just 0xA0) (ExpectedMsg [[Match 0xaa,Questioned "??",Match 0xcc]]))  _ _ _)])           = True
 testCaseQuestionmarkResult _                                                       = False
 
 testCaseQuestionHalfResult :: DiagScript -> Bool
 testCaseQuestionHalfResult (SP.DiagScript 
                              [SP.ScriptTestCase ( 
-                               SP.TestCase _ _ (ExpectedMessage 0xB0 0xA0 (ExpectedMsg [[Match 0xaa,Questioned "F?",Match 0xcc]])) _ _ _)])           = True
+                               SP.TestCase _ _ (ExpectedMessage _ _ (ExpectedMsg [[Match 0xaa,Questioned "F?",Match 0xcc]])) _ _ _)])           = True
                         where 
 testCaseQuestionHalfResult _                                                       = False
 
 testCaseStarResult :: DiagScript -> Bool
 testCaseStarResult (SP.DiagScript 
                         [SP.ScriptTestCase ( 
-                          SP.TestCase "abc" (DiagnosisMessage 0xA0 0xB0 [0x1,0x2,0x3]) _ 2000 0xA0 0xB0)])           = True
+                          SP.TestCase "abc" (DiagnosisMessageMaybe _ _ [0x1,0x2,0x3]) _ 2000 _ _)])           = True
 testCaseStarResult _                                                               = False
 
 
@@ -125,7 +144,7 @@ testCaseStarResult _                                                            
 testCaseWildcardResult :: DiagScript -> Bool
 testCaseWildcardResult (SP.DiagScript 
                         [SP.ScriptTestCase ( 
-                          SP.TestCase "abc" (DiagnosisMessage 0xA0 0xB0 [0x1,0x2,0x3]) _ 2000 0xA0 0xB0)])           = True
+                          SP.TestCase "abc" _ _ 2000 _ _)])           = True
 testCaseWildcardResult _                                                           = False
 
 
@@ -134,16 +153,16 @@ testCaseExplicitResult :: DiagScript -> Bool
 testCaseExplicitResult (SP.DiagScript 
                         [SP.ScriptTestCase ( 
                          SP.TestCase "abc"
-                          (DiagnosisMessage 0xA0 0xB0 [0x1,0x2,0x3])
-                          (ExpectedMessage 0xB0 0xA0 (ExpectedMsg [[Match 0xaa,Match 0xbb,Match 0xcc]]))
-                          2000 0xA0 0xB0)]) = True
+                          (DiagnosisMessageMaybe (Just 0xA0) (Just 0xB0) [0x1,0x2,0x3])
+                          (ExpectedMessage (Just 0xB0) (Just 0xA0) (ExpectedMsg [[Match 0xaa,Match 0xbb,Match 0xcc]]))
+                          2000 (Just 0xA0) (Just 0xB0))]) = True
 testCaseExplicitResult _         = False
 
 testOneHexResult :: DiagScript -> Bool
 testOneHexResult (SP.DiagScript 
                    [SP.ScriptTestCase ( 
-                     SP.TestCase _ (DiagnosisMessage 0xf0 0xf2 [0x31,0x0])
-                                   (ExpectedMessage  0xf2 0xf0 (ExpectedMsg [[Match 1,Match 2, Match 3]]))  _ _ _)])           = True
+                     SP.TestCase _ (DiagnosisMessageMaybe (Just 0xf0) (Just 0xf2) [0x31,0x0])
+                                   (ExpectedMessage  (Just 0xf2) (Just 0xf0) (ExpectedMsg [[Match 1,Match 2, Match 3]]))  _ _ _)])           = True
 testOneHexResult  _                                                           = False
 
 
@@ -207,18 +226,17 @@ groupNestedResult  _                                  = False
          
 testLoopExplicit ::  SkriptAssertion
 testLoopExplicit parseResult =
-  let diagMsg       = DiagnosisMessage 0xA0 0xB0 [0x1,0x2,0x3]
-      diagMsgExpect = ExpectedMessage  0xB0 0xA0 (ExpectedMsg [[Match 0xaa, Match 0xbb, Match 0xcc]])
+  let diagMsg       = DiagnosisMessageMaybe (Just 0xA0) (Just 0xB0) [0x1,0x2,0x3]
+      diagMsgExpect = ExpectedMessage  (Just 0xB0) (Just 0xA0) (ExpectedMsg [[Match 0xaa, Match 0xbb, Match 0xcc]])
       expected      = SP.DiagScript {
         SP.scriptElements = [
           SP.Loop "loopA" 10 [
             SP.ScriptTestCase (
-              SP.TestCase "abc" diagMsg diagMsgExpect 2000 0xA0 0xB0) ]]}
+              SP.TestCase "abc" diagMsg diagMsgExpect 2000 (Just 0xA0) (Just 0xB0)) ]]}
       mkTest = either
           (\error -> HU.assertBool ("was not parsed correctly:" ++ show error) False)
           (\x -> expected HU.@=? x) in
   mkTest parseResult
-
 
 
 generalAssertion :: ParsedSkript -> (DiagScript -> Bool) -> HU.Assertion 
@@ -240,6 +258,17 @@ generalTest testAssertion file  = do
   f <-  readFile file
   let s = SP.parseScript f 
   return $ testAssertion s
+
+
+
+
+
+
+allTrueResult :: DiagScript -> Bool
+allTrueResult _ = True
+
+allSkriptFiles = getRecursiveContents "Tests/diagnoser/"
+a = liftM (map  (assertionTest allTrueResult)) allSkriptFiles
 
 
 -- Function for quickly comparing input from .skr file and parsed Output

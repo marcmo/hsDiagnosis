@@ -10,6 +10,7 @@ import Data.Word(Word8,Word16)
 import Control.Applicative
 import Text.ParserCombinators.Parsec hiding (many, optional, (<|>))
 import Data.Char
+import Data.Maybe
 
 data ScriptElement = ScriptTestCase TestCase
                    | Loop String Int [ScriptElement]
@@ -23,13 +24,14 @@ data ScriptElement = ScriptTestCase TestCase
 data DiagScript = DiagScript {
   scriptElements :: [ScriptElement]
 } deriving (Show,Eq)
+
 data TestCase = TestCase {
   caseName :: String,
-  sendMsg  :: DiagnosisMessage,
+  sendMsg  :: DiagnosisMessageMaybe,
   expected :: ExpectedMessage,
   timeout  :: Int,
-  source   :: Word8,
-  target   :: Word8
+  source   :: Maybe Word8,
+  target   :: Maybe Word8
 } deriving (Show,Eq)
 
 
@@ -51,8 +53,8 @@ data Parameter = Parameter ParaName ParaValue
 
 
 mkTestCase n m e time s t = TestCase n sendM exp time s t
-  where sendM = DiagnosisMessage s t m
-        exp = ExpectedMessage t s e
+  where sendM = DiagnosisMessageMaybe s t m
+        exp   = ExpectedMessage t s e
 
 
 lexer :: P.TokenParser ()
@@ -162,8 +164,10 @@ testcase =
               <*> (reserved "SEND" *> hexList)
               <*> (reserved "EXPECT" *> expectedMsg)
               <*> (reserved "TIMEOUT" *> read `fmap` brackets (many1 digit))
-              <*> (reserved "SOURCE" *> brackets hexNum)
-              <*> (reserved "TARGET" *> brackets hexNum)
+              <*> ((option () (reserved "SOURCE")) *> (do a <- option 0 (brackets hexNum)
+                                                          return $ case a of {(0) -> Nothing; otherwise -> Just a}))
+              <*> ((option () (reserved "TARGET")) *> (do a <- option 0 (brackets hexNum)
+                                                          return $ case a of {(0) -> Nothing; otherwise -> Just a}))
 
 
 hexNumMatch ::  GenParser Char () Match

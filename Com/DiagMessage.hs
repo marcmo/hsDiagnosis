@@ -8,6 +8,8 @@ import Com.HSFZMessage
 
 
 
+
+
 data Match = Match Word8
            | Star 
            | Questioned String        
@@ -24,12 +26,19 @@ data ExpectedMsg  = ExpectedMsg  Expected
 
 
 data ExpectedMessage = ExpectedMessage {
-  expectSource :: Word8,  -- ??? switch source and target ???
-  expectTarget :: Word8,
+  expectSource :: Maybe Word8,  -- ??? switch source and target ???
+  expectTarget :: Maybe Word8,
   expectPayload :: ExpectedMsg
 } deriving (Eq,Show)
 
 
+
+data DiagnosisMessageMaybe = DiagnosisMessageMaybe {
+  diagSourceM  :: Maybe Word8,
+  diagTargetM  :: Maybe Word8,
+  diagPayloadM :: [Word8]
+
+} deriving (Eq,Show)
 
 
 data DiagnosisMessage = DiagnosisMessage {
