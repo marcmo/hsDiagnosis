@@ -9,38 +9,6 @@ import Com.HSFZMessage
 
 
 
-
-data Match = Match Word8
-           | Star 
-           | Questioned String        
-     deriving (Eq,Show)
-
-
-type Expected = [[Match]]
-
-data ExpectedMsg  = ExpectedMsg  Expected
-                  | EveryOrNoMsg   -- corresponds to [#]
-                  | EveryMsg       -- corresponds to [*]
-                  | NoMsg          -- corresponds to [] 
-      deriving (Eq,Show)
-
-
-data ExpectedMessage = ExpectedMessage {
-  expectSource :: Maybe Word8,  -- ??? switch source and target ???
-  expectTarget :: Maybe Word8,
-  expectPayload :: ExpectedMsg
-} deriving (Eq,Show)
-
-
-
-data DiagnosisMessageMaybe = DiagnosisMessageMaybe {
-  diagSourceM  :: Maybe Word8,
-  diagTargetM  :: Maybe Word8,
-  diagPayloadM :: [Word8]
-
-} deriving (Eq,Show)
-
-
 data DiagnosisMessage = DiagnosisMessage {
   diagSource  :: Word8,
   diagTarget  :: Word8,
