@@ -2,81 +2,16 @@ module Diagnoser.DiagScriptParser
 
 where 
 
+import Data.Word(Word8,Word16)
 import qualified Text.ParserCombinators.Parsec.Token as P
 import Util.Encoding
 import Text.ParserCombinators.Parsec.Language
 import Com.DiagMessage
-import Data.Word(Word8,Word16)
 import Control.Applicative
 import Text.ParserCombinators.Parsec hiding (many, optional, (<|>))
 import Data.Char
-import Data.Maybe
-import Control.Monad 
 
-data ScriptElement = ScriptTestCase TestCase
-                   | Loop String Int [ScriptElement]
-                   | Group String [ScriptElement]
-                   | Wait  Int
-                   | Useraction String
-                   | Callscript FilePath [Parameter]
-                   | CanMsg String Word16 [Word8]
-                   | CyclicCanMsg String Word16 [Word8] Int [ScriptElement]
-  deriving (Show,Eq)
-data DiagScript = DiagScript {
-  scriptElements :: [ScriptElement]
-} deriving (Show,Eq)
-
-data TestCase = TestCase {
-  caseName :: String,
-  sendMsg  :: DiagScriptMsg,
-  expected :: ExpectedMessage,
-  timeout  :: Int,
-  source   :: Maybe Word8,
-  target   :: Maybe Word8
-} deriving (Show,Eq)
-
-
-mkTestCase n m e time s t = TestCase n sendM exp time s t
-  where sendM = DiagScriptMsg s t m
-        exp   = ExpectedMessage t s e
-
-
-data Match = Match Word8
-           | Questioned String        
-           | Star 
-     deriving (Eq,Show)
-
-
-type Expected = [[Match]]
-
-data ExpectedPayload  = ExpectedMsg  Expected
-                      | EveryOrNoMsg   -- corresponds to [#]
-                      | EveryMsg       -- corresponds to [*]
-                      | NoMsg          -- corresponds to [] 
-      deriving (Eq,Show)
-
-
-data ExpectedMessage = ExpectedMessage {
-  expectSource :: Maybe Word8,  -- ??? switch source and target ???
-  expectTarget :: Maybe Word8,
-  expectPayload :: ExpectedPayload
-} deriving (Eq,Show)
-
-
-
-data DiagScriptMsg = DiagScriptMsg {
-  diagSourceM  :: Maybe Word8,
-  diagTargetM  :: Maybe Word8,
-  diagPayloadM :: [Word8]
-
-} deriving (Eq,Show)
-
-
-
-type ParaName = String
-type ParaValue = [Word8]
-data Parameter = Parameter ParaName ParaValue
-                  deriving (Show,Eq)
+import Diagnoser.ScriptInterpreter
 
 
 -- TODO: add remaning reserved names
