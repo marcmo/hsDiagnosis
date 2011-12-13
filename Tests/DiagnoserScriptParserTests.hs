@@ -6,17 +6,12 @@ module Tests.DiagnoserScriptParserTests
 where
 
 import qualified Diagnoser.DiagScriptParser as SP
-import Diagnoser.ScriptInterpreter
-import Com.DiagMessage
+import Diagnoser.ScriptDatatypes
 import qualified Test.HUnit as HU
 import Test.Framework (testGroup, Test)
 import Test.Framework.Providers.HUnit (testCase)
 import Text.Parsec.Error
-import Diagnoser.DiagScriptParser
 import Util.RecursiveContents
-import Control.Monad
-
-import qualified Text.Show.Pretty as Pr
 
 scriptPath = "Tests/diagnoser/implemented"
 
@@ -286,9 +281,7 @@ allTrueResult :: DiagScript -> Bool
 allTrueResult _ = True
 
 allSkriptFiles = getRecursiveContents "Tests/diagnoser/"
-
  
-
 -- Function for quickly comparing input from .skr file and parsed Output
 devTest :: String -> IO ()
 devTest f = do
@@ -297,16 +290,9 @@ devTest f = do
   putStrLn s 
   print p 
 
+devtests = allSkriptFiles >>= mapM_ devTest
 
-
-
-
-
-devtests = do a <- allSkriptFiles
-              (mapM_ devTest a)
-
-devTests2 = do a <- allSkriptFiles
-               (mapM_ dTest a)
+devTests2 = allSkriptFiles >>= mapM_ dTest
       where dTest f = do  s <- readFile f
                           let p = SP.parseScript s  
                           putStrLn "\n\n\n"
@@ -315,6 +301,3 @@ devTests2 = do a <- allSkriptFiles
                           putStrLn s 
                           print p 
 
-
-
--- error in: EXAMPLE_nested_groups_cycliccanmsg.skr

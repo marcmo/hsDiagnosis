@@ -2,25 +2,20 @@ module Diagnoser.TestCaseExecuter
 
 where
 
-import Diagnoser.DiagnosisTestCase
-import DiagnosticConfig
 import Util.Encoding
 import Data.Word
-import Control.Monad
-import Data.Maybe
 import Com.DiagClient
-
-type ErrorDesc = String
+import Diagnoser.ScriptDatatypes
 
 data TestResult = TR {
   testCount :: Int,
-  errors :: [ErrorDesc]
+  errors :: [String]
 } deriving (Show)
 
 combine :: TestResult -> TestResult -> TestResult
 combine (TR a as) (TR b bs) = TR (a+b) (as ++ bs)
 
-expect :: [Word8] -> Maybe DiagnosisMessage -> IO (Maybe ErrorDesc)
+expect :: [Word8] -> Maybe DiagnosisMessage -> IO (Maybe String)
 expect xs Nothing = return Nothing
 expect xs (Just msg) = 
     if (diagPayload msg == xs) 
@@ -28,16 +23,21 @@ expect xs (Just msg) =
       else return $ (Just errorMsg)
         where errorMsg = "damn it!! expected" ++ showAsHexString xs ++ " but was " ++ (showAsHexString $ diagPayload msg)
       
+runScript :: DiagScript -> IO ()
+runScript (DiagScript ss) = do
+  mapM_ runScriptElement ss
 
-runTestCase ::  TestCase -> IO (Maybe ErrorDesc)
-runTestCase (TestCase name msg expected timeout) =
-  sendData conf (diagPayload msg) >>= expect expected 
+runScriptElement (Wait n) = print $ "waiting for " ++ show n
 
-runTestRun :: TestRun -> IO TestResult
-runTestRun (SingleLevel ts) = do
-  mes <- forM ts runTestCase
-  return $ TR (length mes) (catMaybes mes)
-runTestRun (MultiLevel rs) = do
-  foldM comb (TR 0 []) rs 
-    where comb acc tr =  (combine acc) `liftM` (runTestRun tr)
+-- runTestCase ::  TestCase -> IO (Maybe ErrorDesc)
+-- runTestCase (TestCase name msg expected timeout) =
+--   sendData conf (diagPayload msg) >>= expect expected 
+-- 
+-- runTestRun :: TestRun -> IO TestResult
+-- runTestRun (SingleLevel ts) = do
+--   mes <- forM ts runTestCase
+--   return $ TR (length mes) (catMaybes mes)
+-- runTestRun (MultiLevel rs) = do
+--   foldM comb (TR 0 []) rs 
+--     where comb acc tr =  (combine acc) `liftM` (runTestRun tr)
 

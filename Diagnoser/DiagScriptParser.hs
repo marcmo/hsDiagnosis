@@ -6,12 +6,10 @@ import Data.Word(Word8,Word16)
 import qualified Text.ParserCombinators.Parsec.Token as P
 import Util.Encoding
 import Text.ParserCombinators.Parsec.Language
-import Com.DiagMessage
 import Control.Applicative
 import Text.ParserCombinators.Parsec hiding (many, optional, (<|>))
-import Data.Char
-
-import Diagnoser.ScriptInterpreter
+import Data.Char(toUpper)
+import Diagnoser.ScriptDatatypes
 
 
 -- TODO: add remaning reserved names
