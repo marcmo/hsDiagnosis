@@ -7,10 +7,13 @@ import Util.Encoding
 import Com.HSFZMessage
 
 
+
+
 data DiagnosisMessage = DiagnosisMessage {
-  diagSource :: Word8,
-  diagTarget :: Word8,
+  diagSource  :: Word8,
+  diagTarget  :: Word8,
   diagPayload :: [Word8]
+
 } deriving (Eq)
 instance Show DiagnosisMessage where
   show (DiagnosisMessage s t xs)  = '[':showAsHex s ++ "][" ++ showAsHex t ++ "]"
