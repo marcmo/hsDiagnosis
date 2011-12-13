@@ -2,60 +2,19 @@ module Diagnoser.DiagScriptParser
 
 where 
 
+import Data.Word(Word8,Word16)
 import qualified Text.ParserCombinators.Parsec.Token as P
 import Util.Encoding
 import Text.ParserCombinators.Parsec.Language
 import Com.DiagMessage
-import Data.Word(Word8,Word16)
 import Control.Applicative
 import Text.ParserCombinators.Parsec hiding (many, optional, (<|>))
+import Data.Char
+
+import Diagnoser.ScriptInterpreter
 
 
-data ScriptElement = ScriptTestCase TestCase
-                   | Loop String Int [ScriptElement]
-                   | Group String [ScriptElement]
-                   | Wait  Int
-                   | Useraction String
-                   | Callscript FilePath [Parameter]
-                   | CanMsg String Word16 [Word8]
-                   | CyclicCanMsg String Word16 [Word8] Int [ScriptElement]
-  deriving (Show,Eq)
-data DiagScript = DiagScript {
-  scriptElements :: [ScriptElement]
-} deriving (Show,Eq)
-data TestCase = TestCase {
-  caseName :: String,
-  sendMsg  :: DiagnosisMessage,
-  expected :: DiagnosisMessage,
-  timeout  :: Int,
-  source   :: Word8,
-  target   :: Word8
-} deriving (Show,Eq)
-
-
--- data CanMsg = CanMsg {
---   name    :: String,
---   id      :: Word16,
---   dataMsg :: DiagnosisMessage}deriving (Show,Eq)
-
---data CanMsg = CanMsg String Word16 [Word8]
---              deriving (Show,Eq)
-
-
-
-type ParaName = String
-type ParaValue = [Word8]
---type ParaValue = String
-data Parameter = Parameter ParaName ParaValue
-                  deriving (Show,Eq)
-
-
-
-mkTestCase n m e time s t = TestCase n sendM exp time s t
-  where sendM = DiagnosisMessage s t m
-        exp = DiagnosisMessage t s e
-
-
+-- TODO: add remaning reserved names
 lexer :: P.TokenParser ()
 lexer = P.makeTokenParser $ haskellStyle
            {  P.reservedNames = ["LOOPSTART", "LOOPEND","GROUPSTART","GROUPEND","DIAG","SEND","EXPECT","TIMEOUT","SOURCE","TARGET"]
@@ -72,14 +31,8 @@ reserved   = P.reserved lexer
 brackets   = P.brackets lexer
 reservedOp = P.reservedOp lexer
 
--- diagscript ::= scriptelem*
--- scriptelem ::= loop | group | test
--- loop       ::= loopstart test* loopend
--- loopstart  ::= "LOOPSTART" name "COUNT" number
--- loopend    ::= "LOOPEND" name
--- test       ::= testname sendmsg expect timeout source target
-namechars = ['a'..'z']++['A'..'Z']++"_,- "++['0'..'9']
-paramVarChars = ['a'..'z']++['A'..'Z']++"_,- "++['0'..'9']
+namechars = ['a'..'z']++['A'..'Z']++"_- "++['0'..'9']
+
 
 nameInBrackets = brackets (many1 $ oneOf namechars)
 diagscript :: Parser DiagScript
@@ -88,110 +41,133 @@ diagscript = do
     DiagScript <$> many1 scriptelem <* eof
 
 scriptelem :: Parser ScriptElement
-scriptelem = do reserved "LOOPSTART"
-                n <- nameInBrackets
-                reserved "COUNT"
-                num <- brackets (many1 digit)
-                ss <- many scriptelem
-                reserved "LOOPEND"
-                brackets (string n)
-                return $ Loop n (read num) ss
-         <|> do reserved "GROUPSTART"
-                n <- nameInBrackets
-                ss <- many1 scriptelem
-                reserved "GROUPEND"
-                brackets (string n)
-                return $ Group n ss
-         <|> do reserved "WAIT"
-                num <- brackets (many1 digit)
-                return $ Wait (read num)
-         <|> do reserved "USERACTION"
-                txt <- parens parseString
-                return $ Useraction txt
-         <|> do reserved "CALLSCRIPT"
-                path <- filePath
-                whiteSpace
-                pL <- option [] parameterList
-                return $ Callscript path pL
-         <|> do reserved "CANMSG"
-                n <- nameInBrackets
-                reserved "ID"
-                id <- brackets hexNum16
-                reserved "DATA"
-                dat <- hexList
-                return $ CanMsg n id dat      
-         <|> do reserved "STARTCYCLICCANMSG"
-                n   <- nameInBrackets
-                reserved "ID"
-                id  <- brackets hexNum16 
-                reserved "DATA"
-                dat <- hexList
-                reserved "CYCLE"
-                num <- brackets (many1 digit)
-                ss  <- many scriptelem
-                reserved "STOPCYCLICCANMSG"
-                brackets (string n)
-                return $ CyclicCanMsg n id dat (read num) ss
-         <|> ScriptTestCase <$> testcase
+scriptelem = ScriptTestCase <$> testcase
+         <|> loop
+         <|> group
+         <|> cyclicCanMsg     
+         <|> Useraction <$> (reserved "USERACTION" *> parens parseString)
+         <|> Callscript <$> (reserved "CALLSCRIPT" *> filePath)
+                        <*> (whiteSpace            *> option [] parameterList)
+         <|> CanMsg     <$> (reserved "CANMSG"     *> nameInBrackets)         
+                        <*> (reserved "ID"         *> brackets hexNum16)         
+                        <*> (reserved "DATA"       *> hexList)
+         <|> Wait       <$> fmap read
+                            (reserved "WAIT"       *> brackets (many1 digit))
          <?> "scriptelement"
+         
+
+
+loop = do name  <- reserved "LOOPSTART" *>  nameInBrackets
+          count <- reserved "COUNT"     *> brackets (many1 digit)
+          ss    <- many scriptelem <* 
+                   reserved "LOOPEND"    <* brackets (string name) 
+          return $ Loop name (read count) ss
+
+
+group =  do name <- reserved "GROUPSTART" *> nameInBrackets
+            ss   <- many1 scriptelem      <*  
+                    reserved "GROUPEND"   <* brackets (string name)
+            return $ Group name ss
+
+
+cyclicCanMsg = do name  <- reserved "STARTCYCLICCANMSG" *> nameInBrackets
+                  id    <- reserved "ID"                *> brackets hexNum16
+                  dat   <- reserved "DATA"              *> hexList
+                  cycle <- reserved "CYCLE"             *> brackets (many1 digit)
+                  ss    <- many scriptelem              <* 
+                           reserved "STOPCYCLICCANMSG"  <* brackets (string name)
+                  return $ CyclicCanMsg name id dat (read cycle) ss
+                    
+
+testcase :: Parser TestCase
+testcase = do name    <- reserved "DIAG"    *> nameInBrackets
+              send    <- reserved "SEND"    *> hexList
+              expect  <- reserved "EXPECT"  *> expectedMsg
+              timeout <- reserved "TIMEOUT" *> brackets (many1 digit)
+              snt     <- sourceAndTarget
+              return $ uncurry (mkTestCase name send expect (read timeout)) snt
+    where sourceAndTarget :: CharParser () (Maybe Word8, Maybe Word8)
+          sourceAndTarget = do source <- reserved "SOURCE" *> brackets hexNum
+                               target <- reserved "TARGET" *> brackets hexNum
+                               return (Just source, Just target)
+                         <|> return (Nothing, Nothing)                
+      
 
 
 
 -- TODO: make filePath match windows/unix file paths
-filePath ::  CharParser () String
-filePath = (many1 $ noneOf "\"\r\n ")
+filePath :: CharParser () FilePath
+filePath = many1 $ noneOf "\"\r\n "
 
+-- TODO: maybe making parser accept whitespaces around equals sign
 parameter ::  GenParser Char () Parameter
-parameter = do char '"'
-               name <- (many1 $ oneOf namechars)
-               char '"'; char '=';  char '"'
-               var <- hexListNoBrackets
-               char '"'
-               return $ Parameter name var
+parameter  = do char '"'
+                name <- many1 $ oneOf namechars
+                char '"'; char '=';  char '"'
+                var <- hexListNoBrackets
+                char '"'
+                return $ Parameter name var
 
 
 parameterList ::  CharParser () [Parameter]
-parameterList = brackets $ (sepBy parameter (symbol ";"))
+parameterList = brackets $ sepBy parameter (symbol ";")
 
 hexListNoBrackets ::  CharParser () [Word8]
-hexListNoBrackets = (sepBy hexNum (symbol ","))
+hexListNoBrackets = sepBy hexNum (symbol ",")
 
-                
-testcase :: Parser TestCase
-testcase =
-   mkTestCase <$> (reserved "DIAG" *> nameInBrackets)
-              <*> (reserved "SEND" *> hexList)
-              <*> (reserved "EXPECT" *> hexList)
-              <*> (reserved "TIMEOUT" *> read `fmap` brackets (many1 digit))
-              <*> (reserved "SOURCE" *> brackets hexNum)
-              <*> (reserved "TARGET" *> brackets hexNum)
+
+match ::  GenParser Char () Match
+match = do s <- try (char '*')
+           return Star 
+       <|> do s <- try (count 2 (oneOf (['0'..'9']++['a'..'f']++['A'..'F'])))
+    --        s <- try (many1 (oneOf (['0'..'9']++['a'..'f']++['A'..'F'])))
+              return $ Match (string2hex s)
+       <|> do s <- try (count 2 (oneOf (['0'..'9']++['a'..'f']++['A'..'F']++ "?")))
+              return $ Questioned (map toUpper s)
+       <|> do s <- oneOf (['0'..'9']++['a'..'f']++['A'..'F'])
+              return $ Match (string2hex [s])
+       <?> "match" 
+
+matches ::  CharParser () [Match]
+matches =  sepBy match (symbol ",")
+
+
+expectedMsg :: GenParser Char () ExpectedPayload
+expectedMsg =  do try (brackets $ string "")
+                  return NoMsg
+           <|> do try (brackets $ char '*')
+                  return EveryMsg
+           <|> do try (brackets $ char '#')
+                  return EveryOrNoMsg
+           <|> do ret <- try $ brackets (sepBy (whiteSpace *> matches <* whiteSpace) (symbol "|"))
+                  return $ ExpectedMsg ret
+
 
 
 
 hexList ::  CharParser () [Word8]
-hexList = brackets $ (sepBy hexNum (symbol ","))
+hexList = brackets (sepBy hexNum (symbol ","))
 
 
 
 -- TODO: check if a native Parsec function exits for this
 parseString :: GenParser Char st String
-parseString = do char '"'
-                 x <- many (noneOf "\"")
-                 char '"'
-                 return  x
+parseString = char '"' *> many (noneOf "\"") <* char '"'
 
-hexNum ::  GenParser Char st Word8
+
+
+hexNum :: GenParser Char st Word8
 hexNum = do s <- many1 (oneOf (['0'..'9']++['a'..'f']++['A'..'F']))
             return $ string2hex s
 
-hexNum16 ::  GenParser Char st Word16
+hexNum16 :: GenParser Char st Word16
 hexNum16 = do s <- many1 (oneOf (['0'..'9']++['a'..'f']++['A'..'F']))
               return $ string2hex16 s
 
 
 run :: Show a => Parser a -> String -> IO ()
 run p input =
-    case (parse p "" input) of
+    case parse p "" input of
         Left err -> do putStr "parse error at "
                        print err
         Right x  -> print x
@@ -210,4 +186,6 @@ main2 = do
 
 parseScript ::  String -> Either ParseError DiagScript
 parseScript = parse diagscript "(unknown)"
+
+
 
