@@ -90,7 +90,7 @@ testOrResult (DiagScript
                        [ScriptTestCase ( 
                          TestCase _ 
                             (DiagScriptMsg Nothing Nothing _)
-                            (ExpectedMessage Nothing Nothing (ExpectedMsg [_,_])) 
+                            (ExpectedMsg Nothing Nothing (ExpectedPayload [_,_])) 
                             _ Nothing Nothing )])                           = True
 testOrResult _                                                              = False
 
@@ -100,7 +100,7 @@ testCaseNoSTResult (DiagScript
                        [ScriptTestCase ( 
                          TestCase "11_ECU_RESET_POWERON"
                            (DiagScriptMsg Nothing Nothing [0x11,0x01])
-                           (ExpectedMessage Nothing Nothing _) 
+                           (ExpectedMsg Nothing Nothing _) 
                            2000 Nothing Nothing )])                           = True
 testCaseNoSTResult _                                                   = False
 
@@ -109,7 +109,7 @@ testCaseNoneResult :: DiagScript -> Bool
 testCaseNoneResult (DiagScript 
                        [ScriptTestCase ( 
                          TestCase "abc" _
-                           (ExpectedMessage _ _ NoMsg) 
+                           (ExpectedMsg _ _ NoMsg) 
                            2000 _ _ )])                           = True
 testCaseNoneResult _                                                   = False
 
@@ -118,7 +118,7 @@ testCaseEveryResult (DiagScript
                       [ScriptTestCase ( 
                          TestCase "abc" 
                            (DiagScriptMsg _ _ [0x1,0x2,0x3]) 
-                           (ExpectedMessage _ _ EveryMsg)  
+                           (ExpectedMsg _ _ EveryMsg)  
                            2000 _ _)])                          = True
 testCaseEveryResult _                                           = False
 
@@ -127,7 +127,7 @@ testCaseEveryOrNoneResult (DiagScript
                              [ScriptTestCase ( 
                                 TestCase "abc"                            
                                   (DiagScriptMsg _ _ _) 
-                                  (ExpectedMessage _ _ EveryOrNoMsg)  
+                                  (ExpectedMsg _ _ EveryOrNoMsg)  
                                   2000 _ _)])                     = True
 testCaseEveryOrNoneResult _                                       = False
 
@@ -135,8 +135,8 @@ testCaseQuestionmarkResult :: DiagScript -> Bool
 testCaseQuestionmarkResult (DiagScript 
                              [ScriptTestCase ( 
                                TestCase _ _ 
-                                (ExpectedMessage (Just 0xB0) (Just 0xA0) 
-                                                 (ExpectedMsg [[Match 0xaa,Questioned "??",Match 0xcc]]))  
+                                (ExpectedMsg (Just 0xB0) (Just 0xA0) 
+                                                 (ExpectedPayload [[Match 0xaa,Questioned "??",Match 0xcc]]))  
                                _ _ _)])                                            = True
 testCaseQuestionmarkResult _                                                       = False
 
@@ -144,7 +144,7 @@ testCaseQuestionHalfResult :: DiagScript -> Bool
 testCaseQuestionHalfResult (DiagScript 
                              [ScriptTestCase ( 
                                TestCase _ _ 
-                                 (ExpectedMessage _ _ (ExpectedMsg [[Match 0xaa,Questioned "F?",Match 0xcc]]))
+                                 (ExpectedMsg _ _ (ExpectedPayload [[Match 0xaa,Questioned "F?",Match 0xcc]]))
                                   _ _ _)])                                         = True
 testCaseQuestionHalfResult _                                                       = False
 
@@ -152,7 +152,7 @@ testCaseStarResult :: DiagScript -> Bool
 testCaseStarResult (DiagScript 
                         [ScriptTestCase ( 
                           TestCase "abc" (DiagScriptMsg _ _ [0x1,0x2,0x3])
-                            (ExpectedMessage _ _ (ExpectedMsg [[Match 0xaa, Star ,Match 0xcc]]))
+                            (ExpectedMsg _ _ (ExpectedPayload [[Match 0xaa, Star ,Match 0xcc]]))
                              2000 _ _)])                                           = True
 testCaseStarResult _                                                               = False
 
@@ -171,7 +171,7 @@ testCaseExplicitResult (DiagScript
                         [ScriptTestCase ( 
                          TestCase "abc"
                           (DiagScriptMsg (Just 0xA0) (Just 0xB0) [0x1,0x2,0x3])
-                          (ExpectedMessage (Just 0xB0) (Just 0xA0) (ExpectedMsg [[Match 0xaa,Match 0xbb,Match 0xcc]]))
+                          (ExpectedMsg (Just 0xB0) (Just 0xA0) (ExpectedPayload [[Match 0xaa,Match 0xbb,Match 0xcc]]))
                           2000 (Just 0xA0) (Just 0xB0))]) = True
 testCaseExplicitResult _         = False
 
@@ -179,7 +179,7 @@ testOneHexResult :: DiagScript -> Bool
 testOneHexResult (DiagScript 
                    [ScriptTestCase ( 
                      TestCase _ (DiagScriptMsg (Just 0xf0) (Just 0xf2) [0x31,0x0])
-                                   (ExpectedMessage  (Just 0xf2) (Just 0xf0) (ExpectedMsg [[Match 1,Match 2, Match 3]]))
+                                   (ExpectedMsg  (Just 0xf2) (Just 0xf0) (ExpectedPayload [[Match 1,Match 2, Match 3]]))
                                  _ _ _)])                                     = True
 testOneHexResult  _                                                           = False
 
@@ -245,7 +245,7 @@ groupNestedResult  _                                  = False
 testLoopExplicit ::  SkriptAssertion
 testLoopExplicit parseResult =
   let diagMsg       = DiagScriptMsg (Just 0xA0) (Just 0xB0) [0x1,0x2,0x3]
-      diagMsgExpect = ExpectedMessage  (Just 0xB0) (Just 0xA0) (ExpectedMsg [[Match 0xaa, Match 0xbb, Match 0xcc]])
+      diagMsgExpect = ExpectedMsg  (Just 0xB0) (Just 0xA0) (ExpectedPayload [[Match 0xaa, Match 0xbb, Match 0xcc]])
       expected      = DiagScript {
         scriptElements = [
           Loop "loopA" 10 [

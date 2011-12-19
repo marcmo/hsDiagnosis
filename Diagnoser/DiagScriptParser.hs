@@ -138,7 +138,7 @@ expectedMsg =  do try (brackets $ string "")
            <|> do try (brackets $ char '#')
                   return EveryOrNoMsg
            <|> do ret <- try $ brackets (sepBy (whiteSpace *> matches <* whiteSpace) (symbol "|"))
-                  return $ ExpectedMsg ret
+                  return $ ExpectedPayload ret
 
 
 
