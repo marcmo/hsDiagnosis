@@ -1,5 +1,8 @@
 module Script.ErrorMemory
     (
+      conf,
+      interpretDtcs,
+      readSecondary, 
       readPrimaryErrorMemory,
       readSecondaryErrorMemory
     )    
@@ -30,6 +33,7 @@ interpretDtcs (x:y:[]) = print "too many responses"
 interpretDtcs (x:[]) = (putStrLn . unlines . interprete . (drop 2) . diagPayload) x
 
 interprete :: [Word8] -> [String]
+interprete [] = ["error"]
 interprete ps = ["status availability mask:" ++ showAsBin (head ps) ++ "(" ++ showAsHex (head ps) ++ ")"] ++
   map showDtc xs
     where xs = zip [1..] (split4s $ tail ps)
