@@ -16,26 +16,34 @@ import Diagnoser.TestCaseExecuter
 executerTests :: Test
 executerTests = 
   testGroup "Matcher"
-    [-- testCase "simple Match"            $ assert    $  match 0x4 (Match 4)
-    -- ,testCase "simple Match not"        $ assertNot $  match 0x3 (Match 4)
-    -- ,testCase "simp. Match questioned"  $ assert    $  match 0x3 (Questioned "??")
-     testCase "Match questioned first"  $ assert    $  matchQuestioned  "03" "?3"
+    [testCase "Match questioned first"  $ assert    $  matchQuestioned  "03" "?3"
     ,testCase "Match questioned second" $ assert    $  matchQuestioned  "33" "?3"
-    ,testCase "Questioned big letter"   $ assert    $  matchQuestioned "FF" "?F"
-    ,testCase "Questioned small letter" $ assert    $  matchQuestioned "ff" "?f"
---    ,testCase "Match questioned second" $ assert    $  match 0xA0 (Questioned "A?")
     ,testCase "Matcher1"                $ assert    $ matcher1 [0,1,2] [Match 0, Match 1, Match 2]
     ,testCase "Matcher1 fail"           $ assertNot $ matcher1 [0,1,3] [Match 0, Match 1, Match 2] 
+    ,testCase "Questioned"              $ assert    $ matcher1 [0]     [Questioned "0?"] 
+    ,testCase "Questioned failed"       $ assertNot $ matcher1 [0]     [Questioned "0?", Match 01] 
+    ,testCase "Questioned first"        $ assert    $ matcher1 [0xFF]  [Questioned "?F"] 
+    ,testCase "Questioned second"       $ assert    $ matcher1 [0xFF]  [Questioned "F?"] 
+    ,testCase "Questioned smallletter s"$ assert    $ matcher1 [0xFF]  [Questioned "f?"] 
+    ,testCase "Questioned smallletter f"$ assert    $ matcher1 [0xFF]  [Questioned "?f"]
     ,testCase "matcher simple fail"     $ assertNot $ matcher [0,1,2] (ExpectedPayload [[Match 0, Match 1, Match 3]]) 
     ,testCase "matcher simple star"     $ assert    $ matcher [0,1,2] (ExpectedPayload [[Star   , Match 1, Match 2]])
     ,testCase "matcher simple star fail"$ assertNot $ matcher [0,1,2] (ExpectedPayload [[Star   , Match 2, Match 2]])
     ,testCase "matcher star Fail   "    $ assertNot $ matcher [0,1,2] (ExpectedPayload [[Star   , Match 1, Match 3 ]])
     ,testCase "matcher star Fail2  "    $ assertNot $ matcher [0,1,2] (ExpectedPayload [[Star   , Questioned "?0", Match 3 ]])
     ,testCase "matche star many"        $ assert    $ matcher [0,1,2] (ExpectedPayload [[Star   , Match 2]])
+    ,testCase "matcher star end"        $ assert    $ matcher [0xAA,0xBB,0xCC]
+                                                               (ExpectedPayload [[Match 0xaa, Star]])
     ,testCase "matcher or Case"         $ assert    $ matcher [0,1,2] (ExpectedPayload [[Star   , Match 2, Match 2],
                                                                                         [Star   , Questioned "?1", Match 2]])
-    ,testCase "matcher or Case Fail2"   $ assertNot $ matcher [0,1,2] (ExpectedPayload [[Star   , Match 2, Match 2],
+    ,testCase "matcher or Case Fail"    $ assertNot $ matcher [0,1,2] (ExpectedPayload [[Star   , Match 2, Match 2],
                                                                                         [Match 0, Match 2, Match 3 ]])
+    ,testCase "matcher many in one"     $ assert    $ matcher [0xAA,0xbb,0xcc,0x01,0x33] 
+                                                              (ExpectedPayload [[Star   , Match 2],
+                                                                                [Questioned "?A"
+                                                                                ,Questioned "B?" 
+                                                                                ,Star]])
+
     ,testCase "Every Message"           $ assert    $ matcher [0,1,2] EveryMsg                                                
     ,testCase "Every Or No Message"     $ assert    $ matcher [0,1,2] EveryOrNoMsg
     ]

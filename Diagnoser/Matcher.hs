@@ -13,8 +13,8 @@ import Debug.Trace
 -- TODO: improve Questioned stuff
 matchQuestioned :: String -> String -> Bool
 matchQuestioned x         "??"         = True
-matchQuestioned (x:y:[]) ('?': z :[])  = y == z
-matchQuestioned (x:y:[]) ( z :'?':[])  = x == z
+matchQuestioned (x:y:[]) ('?': z :[])  = y == toUpper z
+matchQuestioned (x:y:[]) ( z :'?':[])  = x == toUpper z
 matchQuestioned _ _                    = False 
 
 hexStr x = let hexS   = map toUpper (showHex x "") in

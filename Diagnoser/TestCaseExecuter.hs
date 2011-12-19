@@ -11,7 +11,7 @@ import Diagnoser.Matcher
 import Control.Monad
 import Control.Concurrent 
 
-import qualified Script.ErrorMemory as EM
+import DiagnosticConfig(femConfig)
 import qualified Com.DiagClient     as DC
 
 
@@ -50,7 +50,7 @@ runScriptElement n s@(ScriptTestCase (TestCase name
                                                e@(ExpectedMsg   _ _ (ExpectedPayload expected ))  
                                                timeout source target)) = 
   do writeScriptElement n s
-     response <- DC.sendData EM.conf sent
+     response <- DC.sendData (femConfig "localhost") sent
      putStrLn $ "Test Result: " ++ (show $ matches (head response) e)
 
 
