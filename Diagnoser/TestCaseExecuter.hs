@@ -21,16 +21,14 @@ combine (TR a as) (TR b bs) = TR (a+b) (as ++ bs)
 expect :: [Word8] -> Maybe DiagnosisMessage -> IO (Maybe String)
 expect xs Nothing = return Nothing
 expect xs (Just msg) = 
-    if (diagPayload msg == xs) 
+    if diagPayload msg == xs
       then return Nothing
-      else return $ (Just errorMsg)
-        where errorMsg = "damn it!! expected" ++ showAsHexString xs ++ " but was " ++ (showAsHexString $ diagPayload msg)
+      else return $ Just errorMsg
+        where errorMsg = "damn it!! expected" ++ showAsHexString xs ++ " but was " ++ showAsHexString (diagPayload msg)
       
-runScript (DiagScript ss) = do
-  runScriptWithIndent 0 ss
+runScript (DiagScript ss) =  runScriptWithIndent 0 ss
 
-runScriptWithIndent indent  ss = do
-  mapM_ (runScriptElement indent)   ss
+runScriptWithIndent indent = mapM_ (runScriptElement indent) 
 
 runScriptElement n s@(ScriptTestCase (TestCase name 
                                                (DiagScriptMsg _ _ sent) 
@@ -38,7 +36,7 @@ runScriptElement n s@(ScriptTestCase (TestCase name
                                                timeout source target)) = 
   do writeScriptElement n s
      response <- DC.sendData (femConfig "localhost") sent
-     putStrLn $ "Test Result: " ++ (show $ matches (head response) e)
+     putStrLn $ "Test Result: " ++ show (matches (head response) e)
 runScriptElement n (Loop name count ss) = do putStrLn $ nSpaces n ++ "LOOP "  ++ quoted name  ++ " started"
                                              rep count
                                           where rep 0 = putStrLn $ nSpaces n ++ "LOOP "  ++ quoted name ++ " ended"
@@ -55,7 +53,7 @@ runScriptElement n (CanMsg name id dat)     = putStrLn $ "sending CANMSG " ++ qu
                                                          " with ID "       ++ (quoted . show) id  ++ 
                                                          " and DATA "      ++ (quoted . show) dat
 
-nSpaces n = take n (repeat ' ')
+nSpaces n = replicate n ' '
 quoted  s = "\"" ++ s ++ "\""
 
 writeScriptElement n (ScriptTestCase (TestCase name 

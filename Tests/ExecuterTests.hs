@@ -47,7 +47,7 @@ executerTests =
 
 
 assert :: Bool -> HU.Assertion
-assert a    = HU.assertBool    "failed, but should not" a
+assert = HU.assertBool    "failed, but should not"
 
 assertNot :: Bool -> HU.Assertion
 assertNot a = HU.assertBool "failed not, but should" $ not a
@@ -90,7 +90,7 @@ allSkriptFiles = getRecursiveContents "Tests/diagnoser/"
 
 printScript f = do
   putStrLn "----------------------------------------------------------------"
-  putStrLn $"File: " ++  (fst f) ++ "\n"
+  putStrLn $"File: " ++  fst f ++ "\n"
   runScript (snd f)
   putStrLn "----------------------------------------------------------------"
   return True
