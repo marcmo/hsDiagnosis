@@ -21,7 +21,7 @@ data DiagScript = DiagScript {
 data TestCase = TestCase {
   caseName :: String,
   sendMsg  :: DiagScriptMsg,
-  expected :: ExpectedMessage,
+  expected :: ExpectedMsg,
   timeout  :: Int,
   source   :: Maybe Word8,
   target   :: Maybe Word8
@@ -29,20 +29,20 @@ data TestCase = TestCase {
 
 mkTestCase n m e time s t = TestCase n sendM exp time s t
   where sendM = DiagScriptMsg s t m
-        exp   = ExpectedMessage t s e
+        exp   = ExpectedMsg t s e
 
 data Match = Match Word8
            | Questioned String        
            | Star 
      deriving (Eq,Show)
 
-data ExpectedPayload  = ExpectedMsg  [[Match]]
+data ExpectedPayload  = ExpectedPayload  [[Match]] --Todo: rename
                       | EveryOrNoMsg   -- corresponds to [#]
                       | EveryMsg       -- corresponds to [*]
                       | NoMsg          -- corresponds to [] 
       deriving (Eq,Show)
 
-data ExpectedMessage = ExpectedMessage {
+data ExpectedMsg = ExpectedMsg {
   expectSource :: Maybe Word8,  -- ??? switch source and target ???
   expectTarget :: Maybe Word8,
   expectPayload :: ExpectedPayload
