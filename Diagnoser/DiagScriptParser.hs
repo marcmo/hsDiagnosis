@@ -29,10 +29,7 @@ reserved   = P.reserved lexer
 brackets   = P.brackets lexer
 reservedOp = P.reservedOp lexer
 
-namechars = ['a'..'z']++['A'..'Z']++"_- "++['0'..'9']
 
-
-nameInBrackets = brackets (many1 $ oneOf namechars)
 diagscript :: Parser DiagScript
 diagscript = do
     whiteSpace
@@ -100,7 +97,7 @@ filePath = many1 $ noneOf "\"\r\n "
 -- TODO: maybe making parser accept whitespaces around equals sign
 parameter ::  GenParser Char () Parameter
 parameter  = do char '"'
-                name <- many1 $ oneOf namechars
+                name <- many1 $ oneOf varNameChars
                 char '"'; char '=';  char '"'
                 var <- hexListNoBrackets
                 char '"'
@@ -118,7 +115,6 @@ match ::  GenParser Char () Match
 match = do s <- try (char '*')
            return Star 
        <|> do s <- try (count 2 (oneOf (['0'..'9']++['a'..'f']++['A'..'F'])))
-    --        s <- try (many1 (oneOf (['0'..'9']++['a'..'f']++['A'..'F'])))
               return $ Match (string2hex s)
        <|> do s <- try (count 2 (oneOf (['0'..'9']++['a'..'f']++['A'..'F']++ "?")))
               return $ Questioned (map toUpper s)
@@ -151,6 +147,9 @@ hexList = brackets (sepBy hexNum (symbol ","))
 -- TODO: check if a native Parsec function exits for this
 parseString :: GenParser Char st String
 parseString = char '"' *> many (noneOf "\"") <* char '"'
+
+nameInBrackets = brackets (many1 $ noneOf "\"\r\n[]")
+varNameChars = ['a'..'z']++['A'..'Z']++"_- "++['0'..'9']
 
 
 
