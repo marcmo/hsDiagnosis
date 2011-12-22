@@ -7,8 +7,14 @@ import Data.Word
 import Com.DiagClient
 import Diagnoser.ScriptDatatypes
 import Diagnoser.Matcher
-import DiagnosticConfig(femConfig)
+import DiagnosticConfig(femConfig,zgwConfig)
 import qualified Com.DiagClient     as DC
+
+import Control.Concurrent
+import Control.Monad
+
+--conf = zgwConfig "10.40.39.85"
+conf = femConfig "localhost"
 
 data TestResult = TR {
   testCount :: Int,
@@ -30,40 +36,70 @@ runScript (DiagScript ss) =  runScriptWithIndent 0 ss
 
 runScriptWithIndent indent = mapM_ (runScriptElement indent) 
 
+
 runScriptElement n s@(ScriptTestCase (TestCase name 
                                                (DiagScriptMsg _ _ sent) 
                                                e@(ExpectedMsg   _ _ (ExpectedPayload expected ))  
                                                timeout source target)) = 
   do writeScriptElement n s
-     response <- DC.sendData (femConfig "localhost") sent
-     putStrLn $ "Test Result: " ++ show (matches (head response) e)
-runScriptElement n (Loop name count ss) = do putStrLn $ nSpaces n ++ "LOOP "  ++ quoted name  ++ " started"
-                                             rep count
-                                          where rep 0 = putStrLn $ nSpaces n ++ "LOOP "  ++ quoted name ++ " ended"
-                                                rep i = do runScriptWithIndent (n + 2) ss
-                                                           rep (i -1 )
-runScriptElement n (Group name ss)      = do putStrLn $ nSpaces n ++ "GROUP " ++ quoted name ++ " started"
-                                             runScriptWithIndent (n + 2)  ss
-                                             putStrLn $ nSpaces n ++ "GROUP " ++ quoted name ++ " ended"
-runScriptElement n (CyclicCanMsg _ _ _ _ _) = putStrLn $ nSpaces n ++ "CYCLICCANMSG: "
-runScriptElement n (Callscript file params) = putStrLn $ nSpaces n ++ "CALLSCRIPT of file: " ++ quoted file ++ "  with parameters   " ++ (quoted . show)  params
-runScriptElement n (Wait time)              = putStrLn $ nSpaces n ++ "WAITing for " ++ show time  ++ " ms"
-runScriptElement n (Useraction msg)         = putStrLn $ nSpaces n ++ "USERACTION " ++ quoted msg
-runScriptElement n (CanMsg name id dat)     = putStrLn $ "sending CANMSG " ++ quoted name         ++ 
-                                                         " with ID "       ++ (quoted . show) id  ++ 
-                                                         " and DATA "      ++ (quoted . show) dat
+     response <- DC.sendData conf sent
+     let m = matches (head response) e
+     putStrLn ""
+     putIndLn n $ "!! Result: " ++ show m
+     if not m then putIndLn n $ "!! Actual response was:  "   ++ show response          
+     else putStr ""
+     putStrLn ""
 
-nSpaces n = replicate n ' '
+runScriptElement n s@(Loop name count ss) = do writeScriptElementStart n s
+                                               replicateM_ count (runScriptWithIndent (n + 2) ss)
+                                               writeScriptElementEnd n s
+
+runScriptElement n s@(Group name ss)      = do writeScriptElementStart n s
+                                               runScriptWithIndent (n + 2)  ss
+                                               writeScriptElementEnd n s  
+runScriptElement n s@(CyclicCanMsg _ _ _ _ ss) = do writeScriptElementStart n s >> putStrLn "!! CanMsg not Implemented!!!!!!!"
+                                                    runScriptWithIndent (n + 2)  ss  
+                                                    writeScriptElementEnd n s
+runScriptElement n s@(CanMsg name id dat)     = writeScriptElement n s >> putStrLn "!! CanMsg not Implemented!!!!!!!"
+runScriptElement n s@(Callscript file params) = writeScriptElement n s
+runScriptElement n s@(Wait time)              = writeScriptElement n s >> threadDelayMs time
+runScriptElement n (Useraction msg)           = putIndLn n $ "USERACTION " ++ "(" ++ quoted msg ++")"
+
+
+
 quoted  s = "\"" ++ s ++ "\""
+bracketed s =  "[" ++ s ++ "]"
+threadDelayMs t = threadDelay (1000 * t)
+nSpaces n = replicate n ' '
+putIndLn n s = putStrLn $ nSpaces n ++ s
 
+
+
+writeScriptElementStart n (Group name ss)      = putIndLn n $ "GROUPSTART " ++ bracketed name
+writeScriptElementStart n (Loop name count ss) = putIndLn n $ "LOOPSTART  " ++ bracketed name ++ " COUNT " ++ bracketed (show count)
+writeScriptElementStart n (CyclicCanMsg name id dat time ss) = putIndLn n $ "STARTCYCLICCANMSG "
+
+writeScriptElementEnd n (Group name  ss)     = putIndLn n $ "GROUPEND "   ++ bracketed name
+writeScriptElementEnd n (Loop name count ss) = putIndLn n $ "LOOPEND "    ++ bracketed name
+writeScriptElementEnd n (CyclicCanMsg name id dat time ss) = putIndLn n $ "STOPCYCLICCANMSG " ++ bracketed name ++
+                                                                          " ID "              ++ bracketed (show id) ++ 
+                                                                          " DATA "            ++ bracketed (show dat)  ++
+                                                                          " CYCLE "           ++ bracketed (show time)  
+
+
+writeScriptElement n (CanMsg name id dat)     = putIndLn n $ "CANMSG " ++ bracketed name         ++ 
+                                                             " ID "    ++ (bracketed . show) id  ++ 
+                                                             " DATA "  ++ (bracketed . show) dat
+writeScriptElement n (Callscript file params) = putIndLn n $ "CALLSCRIPT " ++ file ++ " " ++(bracketed . show)  params  
+writeScriptElement n (Wait time)              = putIndLn n $ "WAIT "       ++ bracketed (show time)
 writeScriptElement n (ScriptTestCase (TestCase name 
                                              (DiagScriptMsg _ _ sent) 
                                              (ExpectedMsg   _ _ (ExpectedPayload expected ))  
                                               timeout source target)) = 
-  putStrLn $ "sending TestCase " ++ quoted name              ++ 
-             " with message "    ++ (quoted . show) sent     ++ 
-             " and expected msg" ++ (quoted . show) expected ++ 
-             " with a timout "   ++ (quoted . show) timeout  ++ 
-             " from source "     ++ (quoted . show) source   ++ 
-             " to target "       ++ (quoted . show) target
-
+  putIndLn n $  "DIAG "    ++ bracketed name              ++ 
+               " SEND "    ++ (bracketed . show) sent     ++ 
+               " EXPECT "  ++ (bracketed . show) expected ++ 
+               " TIMEOUT " ++ (bracketed . show) timeout  ++ sourceAndTarget source  target
+  where sourceAndTarget Nothing Nothing = ""
+        sourceAndTarget source  target  = " SOURCE "  ++ (bracketed . show) source   ++ 
+                                          " TARGET "  ++ (bracketed . show) target

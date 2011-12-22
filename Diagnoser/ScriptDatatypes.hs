@@ -3,6 +3,7 @@ module Diagnoser.ScriptDatatypes
 where
 
 import Data.Word(Word8,Word16)
+import Util.Encoding
 
 data ScriptElement = ScriptTestCase TestCase
                    | Loop String Int [ScriptElement]
@@ -55,8 +56,25 @@ data DiagScriptMsg = DiagScriptMsg {
 
 } deriving (Eq,Show)
 
-type ParaName = String
-type ParaValue = [Word8]
+type ParaName = String   
+type ParaValue = [Word8] 
 data Parameter = Parameter ParaName ParaValue
-                  deriving (Show,Eq)
+                  deriving (Eq)
+
+
+-- Note: show parameter list now as in specification
+instance Show Parameter where 
+  show (Parameter name value) = '"' : name ++ "\"=\"" ++ showAsHexString value ++ "\""
+  showList cs = showChar '[' . showl cs
+              where showl [c]    = shows c . showChar ']'
+                    showl (c:cs) = shows c . showChar ';' . showl cs 
+
+a = [Parameter "name" [0x10], Parameter "name2" [0x10]]
+
+
+
+
+
+
+
 
