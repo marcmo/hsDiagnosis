@@ -20,7 +20,7 @@ identifier = P.identifier lexer
 reserved   = P.reserved lexer
 brackets   = P.brackets lexer
 reservedOp = P.reservedOp lexer
-
+stringLiteral = P.stringLiteral lexer
 
 
 eol =  try (string "\r\n")

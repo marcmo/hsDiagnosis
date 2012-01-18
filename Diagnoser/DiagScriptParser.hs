@@ -24,28 +24,25 @@ scriptelem = ScriptTestCase <$> testcase
          <|> loop
          <|> group
          <|> cyclicCanMsg     
-         <|> Useraction <$> (reserved "USERACTION" *> parens parseString)
+         <|> Useraction <$> (reserved "USERACTION" *> parens stringLiteral)
          <|> CanMsg     <$> (reserved "CANMSG"     *> nameInBrackets)         
                         <*> (reserved "ID"         *> brackets hexNum16)         
                         <*> (reserved "DATA"       *> hexList)
          <|> Wait       <$> fmap read
                             (reserved "WAIT"       *> brackets (many1 digit))
          <?> "scriptelement"
+
          
-
-
 loop = do name  <- reserved "LOOPSTART" *>  nameInBrackets
           count <- reserved "COUNT"     *> brackets (many1 digit)
           ss    <- many scriptelem <* 
                    reserved "LOOPEND"    <* brackets (string name) 
           return $ Loop name (read count) ss
 
-
 group =  do name <- reserved "GROUPSTART" *> nameInBrackets
             ss   <- many1 scriptelem      <*  
                     reserved "GROUPEND"   <* brackets (string name)
             return $ Group name ss
-
 
 cyclicCanMsg = do name  <- reserved "STARTCYCLICCANMSG" *> nameInBrackets
                   id    <- reserved "ID"                *> brackets hexNum16
@@ -54,7 +51,6 @@ cyclicCanMsg = do name  <- reserved "STARTCYCLICCANMSG" *> nameInBrackets
                   ss    <- many scriptelem              <* 
                            reserved "STOPCYCLICCANMSG"  <* brackets (string name)
                   return $ CyclicCanMsg name id dat (read cycle) ss
-                    
 
 testcase :: Parser TestCase
 testcase = do name    <- reserved "DIAG"    *> nameInBrackets
@@ -68,18 +64,16 @@ testcase = do name    <- reserved "DIAG"    *> nameInBrackets
                                target <- reserved "TARGET" *> brackets hexNum
                                return (Just source, Just target)
                          <|> return (Nothing, Nothing)                
-      
 
-
-------------------------------------------------------- remove
--- TODO: make filePath match windows/unix file paths
-filePath :: CharParser () FilePath
-filePath = many1 $ noneOf "\"\r\n "
-----------------------------------------------------
-
-hexListNoBrackets ::  CharParser () [Word8]
-hexListNoBrackets = sepBy hexNum (symbol ",")
-
+expectedMsg :: GenParser Char () ExpectedPayload
+expectedMsg =  do try (brackets $ string "")
+                  return NoMsg
+           <|> do try (brackets $ char '*')
+                  return EveryMsg
+           <|> do try (brackets $ char '#')
+                  return EveryOrNoMsg
+           <|> do ret <- try $ brackets (sepBy (whiteSpace *> matches <* whiteSpace) (symbol "|"))
+                  return $ ExpectedPayload ret
 
 match ::  GenParser Char () Match
 match = do s <- try (char '*')
@@ -96,30 +90,9 @@ matches ::  CharParser () [Match]
 matches =  sepBy match (symbol ",")
 
 
-expectedMsg :: GenParser Char () ExpectedPayload
-expectedMsg =  do try (brackets $ string "")
-                  return NoMsg
-           <|> do try (brackets $ char '*')
-                  return EveryMsg
-           <|> do try (brackets $ char '#')
-                  return EveryOrNoMsg
-           <|> do ret <- try $ brackets (sepBy (whiteSpace *> matches <* whiteSpace) (symbol "|"))
-                  return $ ExpectedPayload ret
-
-
-
 
 hexList ::  CharParser () [Word8]
 hexList = brackets (sepBy hexNum (symbol ","))
-
-
-
--- TODO: check if a native Parsec function exits for this
-parseString :: GenParser Char st String
-parseString = char '"' *> many (noneOf "\"") <* char '"'
-
-
-
 
 hexNum :: GenParser Char st Word8
 hexNum = do s <- many1 (oneOf (['0'..'9']++['a'..'f']++['A'..'F']))
@@ -128,6 +101,7 @@ hexNum = do s <- many1 (oneOf (['0'..'9']++['a'..'f']++['A'..'F']))
 hexNum16 :: GenParser Char st Word16
 hexNum16 = do s <- many1 (oneOf (['0'..'9']++['a'..'f']++['A'..'F']))
               return $ string2hex16 s
+
 
 
 run :: Show a => Parser a -> String -> IO ()
