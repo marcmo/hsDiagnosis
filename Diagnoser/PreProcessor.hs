@@ -12,7 +12,7 @@ import System.Directory
 import qualified System.FilePath as FP-- (isAbsolute,combine)
 
 
--- TODO ADD further Script elements for replacment
+-- TODO ADD further Script elements for replacment if needed
 
 data RelevantOrNot = Irrelevant String             -- any other constructor is relevant for replacing parameters
                    | CallScript FilePath 
@@ -29,7 +29,7 @@ data RelevantOrNot = Irrelevant String             -- any other constructor is r
 
 
 relevants :: Parser [RelevantOrNot]
-relevants = do (many relevantOrNot) <* eof
+relevants = many relevantOrNot <* eof
 
 relevantOrNot :: Parser RelevantOrNot
 relevantOrNot =  try (relevant <* eol)
@@ -50,7 +50,7 @@ diag        = do name    <- reserved "DIAG"    *> nameInBrackets
                  expect  <- reserved "EXPECT"  *> paraNameList
                  timeout <- reserved "TIMEOUT" *> brackets paraName
                  snt     <- sourceAndTarget
-                 return $ Diag name send expect timeout (fst snt) (snd snt)
+                 return $ uncurry (Diag name send expect timeout) snt
     where sourceAndTarget :: CharParser () (Maybe String, Maybe String)
           sourceAndTarget = do source <- reserved "SOURCE" *> brackets paraName
                                target <- reserved "TARGET" *> brackets paraName
@@ -68,8 +68,6 @@ cyclicCanMsg = do name  <- reserved "STARTCYCLICCANMSG" *> nameInBrackets
                   id    <- reserved "ID"                *> brackets paraName
                   dat   <- reserved "DATA"              *> paraNameList
                   cycle <- reserved "CYCLE"             *> brackets paraName
---                  ss    <- many scriptelem              <* 
---                           reserved "STOPCYCLICCANMSG"  <* brackets (string name)  -------- just an irrelevant line
                   return $ CyclicCanMsg name id dat cycle
 
 paraNameList ::  CharParser () [String]
@@ -96,7 +94,7 @@ nameValuePair  = do
   char '"'; char '=';  char '"'
   var <- many1 $ oneOf  (varNameChars ++ ",")
   char '"'
-  return $ (name,var)
+  return (name,var)
 
 nameValuePairList ::  Parser [(String,String)]
 nameValuePairList = brackets $ sepBy nameValuePair (symbol ";")
@@ -137,42 +135,41 @@ replaceParameterList ps ns = map (replaceParameter ps) ns
 showRelevant :: FilePath -> RelevantOrNot -> IO (Either ParseError String)
 showRelevant _ (Irrelevant s) = return $ Right s
 showRelevant _ (Diag name send expect timeout source target) = return $ Right $
-  "DIAG "     ++ (bracketed name)               ++ 
-  " SEND "    ++ (bracketed $ concat $ intersperse "," send)   ++ 
-  " EXPECT "  ++ (bracketed $ concat $ intersperse "," expect)   ++ 
-  " TIMEOUT " ++ (bracketed timeout)  ++ sourceAndTarget source  target
+  "DIAG "     ++ bracketed name                               ++ 
+  " SEND "    ++ bracketed  (intercalate "," send)   ++ 
+  " EXPECT "  ++ bracketed  (intercalate "," expect) ++ 
+  " TIMEOUT " ++ bracketed timeout  ++ sourceAndTarget source  target
     where sourceAndTarget Nothing Nothing = ""
           sourceAndTarget (Just source)  (Just target)  = " SOURCE "  ++ bracketed source   ++ 
                                                           " TARGET "  ++ bracketed target
 showRelevant _ (CanMsg name id dat) = return $ Right $
-  "CANMSG " ++ (bracketed name)     ++
-  " ID "    ++ (bracketed id)       ++
-  " DATA "  ++ (bracketedList dat) 
+  "CANMSG " ++ bracketed name     ++
+  " ID "    ++ bracketed id       ++
+  " DATA "  ++ bracketedList dat 
 showRelevant _ (CyclicCanMsg name id dat cycle) = return $ Right $
-  "STARTCYCLICCANMSG " ++ (bracketed name) ++
-  " ID "               ++ (bracketed id) ++ 
-  " DATA "             ++ (bracketedList dat)  ++
-  " CYCLE "            ++ (bracketed cycle) 
+  "STARTCYCLICCANMSG " ++ bracketed name ++
+  " ID "               ++ bracketed id ++ 
+  " DATA "             ++ bracketedList dat  ++
+  " CYCLE "            ++ bracketed cycle
 showRelevant parentFilePath (CallScript filePath nameValPairs) = do script <- readFile newFilePath
                                                                     prePro newFilePath nameValPairs
   where newFilePath = let dir = FP.dropFileName parentFilePath in
                                 FP.combine dir filePath
 
 bracketed s =  "[" ++ s ++ "]"
-bracketedList s = bracketed $ concat $ intersperse "," s
+bracketedList s = bracketed $ intercalate "," s
 
 prePro :: FilePath -> [(String,String)] -> IO (Either ParseError String)
 prePro filePath nameValPairs = 
   do script <- readFile filePath
-     let rels = parse relevants "Seperate Irreveant from Relevant lines" script
-     case rels of 
-       (Left  a) -> return $ Left a
-       (Right a) -> (combineRelevants $ map (replaceParameters  nameValPairs) a) 
+     either (return . Left)
+            (combineRelevants . map (replaceParameters  nameValPairs))
+            (parse relevants "Seperate Irreveant from Relevant lines" script)
   where combineRelevants :: [RelevantOrNot] -> IO (Either ParseError String)
-        combineRelevants items = do is <- sequence $  map (showRelevant filePath) items 
+        combineRelevants items = do is <- mapM (showRelevant filePath) items 
                                     if null (lefts is) 
-                                    then  (return $ Right $ concat $ intersperse "\n" (rights is))
-                                    else  (return $ Left  $ head                      (lefts  is))
+                                      then  return . Right $ intercalate "\n"  (rights is)
+                                      else  return . Left  $ head              (lefts  is)
 
 
 
