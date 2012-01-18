@@ -1,19 +1,18 @@
-module Diagnoser.PreProcessor where
+module Diagnoser.PreProcessor 
 
+where
+
+import Diagnoser.ParserUtils
 import Text.ParserCombinators.Parsec hiding (many, optional, (<|>))
 import Control.Applicative
-
-import System.Directory
-import qualified System.FilePath as FP-- (isAbsolute,combine)
-
 import qualified Data.Map as Map
 import Data.List
 import Data.Either
+import System.Directory
+import qualified System.FilePath as FP-- (isAbsolute,combine)
 
-import Diagnoser.ParserUtils
-import Debug.Trace
 
--- TODO ADD further Script elements for replacment: CyclicCanMsg etc.
+-- TODO ADD further Script elements for replacment
 
 data RelevantOrNot = Irrelevant String             -- any other constructor is relevant for replacing parameters
                    | CallScript FilePath 
@@ -136,7 +135,7 @@ replaceParameterList ps ns = map (replaceParameter ps) ns
 
 
 showRelevant :: FilePath -> RelevantOrNot -> IO (Either ParseError String)
-showRelevant _ (Irrelevant s) = trace "show irrel: " $ return $ Right s
+showRelevant _ (Irrelevant s) = return $ Right s
 showRelevant _ (Diag name send expect timeout source target) = return $ Right $
   "DIAG "     ++ (bracketed name)               ++ 
   " SEND "    ++ (bracketed $ concat $ intersperse "," send)   ++ 
@@ -164,7 +163,7 @@ bracketedList s = bracketed $ concat $ intersperse "," s
 
 prePro :: FilePath -> [(String,String)] -> IO (Either ParseError String)
 prePro filePath nameValPairs = 
-  do script <- readFile (trace ("prePro" ++ show filePath ++ show nameValPairs) filePath)
+  do script <- readFile filePath
      let rels = parse relevants "Seperate Irreveant from Relevant lines" script
      case rels of 
        (Left  a) -> return $ Left a
