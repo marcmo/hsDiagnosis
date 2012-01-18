@@ -1,0 +1,15 @@
+GROUPSTART [ClearPM]
+   DIAG [ClearPrimaryMemory]                  SEND [14,FF,FF,FF]                   EXPECT [54] TIMEOUT [1000]
+   
+   // 1. Message
+
+   DIAG [TriggerDummyError1]                  SEND [31,01,03,04,00]                EXPECT [71,01,03,04,00,02,FF,10] TIMEOUT [1000]
+   WAIT[100]
+   DIAG [ReadSnapshotApplDummy]              SEND [19,04,02,FF,10,FF]             EXPECT [59,04,02,FF,10,0F,*] TIMEOUT [1000]
+   WAIT[100]
+
+   DIAG [CPM]                  SEND [14,FF,FF,FF]                   EXPECT [54] TIMEOUT [1000]
+
+   DIAG [ReadSnapshotApplDummy]              SEND [19,04,02,FF,10,FF]             EXPECT [59,04,02,FF,10,40] TIMEOUT [1000]
+
+GROUPEND [ClearPM]

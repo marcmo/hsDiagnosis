@@ -12,6 +12,7 @@ import Test.Framework (testGroup, Test)
 import Test.Framework.Providers.HUnit (testCase)
 import Text.Parsec.Error
 import Util.RecursiveContents
+import qualified Diagnoser.PreProcessor as PP
 
 scriptPath = "Tests/diagnoser/implemented"
 
@@ -34,9 +35,6 @@ diagnoserScripterTests = do
   groupNumberNameAssertion  <- assertionTest groupNumberNameResult   (scriptPath ++ "/groupNumberName.skr")
   waitSimpleAssertion       <- assertionTest waitSimpleResult        (scriptPath ++ "/waitSimple.skr")
   useractionSimpleAssertion <- assertionTest useractionSimpleResult  (scriptPath ++ "/useractionSimple.skr")
-  callscriptSimpleAssertion <- assertionTest callscriptSimpleResult  (scriptPath ++ "/callscriptSimple.skr")
-  callscriptWithParameterAssertion <- assertionTest callscriptWithParameterResult   (scriptPath ++ "/callscriptWithParameter.skr")
-  callscriptWithParametersAssertion <- assertionTest callscriptWithParametersResult (scriptPath ++ "/callscriptWithParameters.skr")
   canmsgSimpleAssertion     <- assertionTest canmsgSimpleResult      (scriptPath ++ "/canmsgSimple.skr")
   canmsgCyclicAssertion     <- assertionTest canmsgCyclicResult      (scriptPath ++ "/canmsgCyclic.skr")
   waitExample       <- assertionTest allTrueResult              "Tests/diagnoser/Beispiele_WAIT/EXAMPLE_kwp2000_test_with_WAIT.skr"
@@ -64,10 +62,6 @@ diagnoserScripterTests = do
                                   [testCase "simple wait construct" waitSimpleAssertion],
                         testGroup "useraction"
                                   [testCase "simple useraction construct" waitSimpleAssertion],
-                        testGroup "callscript"
-                                  [testCase "simple callscript construct" callscriptSimpleAssertion,
-                                   testCase "simple callscript construct with one Parameters" callscriptWithParameterAssertion,
-                                   testCase "simple callscript construct with Parameters" callscriptWithParametersAssertion],
                         testGroup "canmsg"
                                   [testCase "simple canmsg construct"   canmsgSimpleAssertion,
                                    testCase "cyclic canmsg construct"   canmsgCyclicAssertion],
@@ -178,17 +172,6 @@ canmsgSimpleResult :: DiagScript -> Bool
 canmsgSimpleResult (DiagScript [CanMsg "CAN_1" 0x6F1 [0x11,0x22,0x33,0x44]]) = True
 canmsgSimpleResult _ = False
 
-callscriptSimpleResult :: DiagScript -> Bool
-callscriptSimpleResult (DiagScript [Callscript "EXAMPLE_Script_CALLSCRIPT_Target.skr" []]) = True
-
-callscriptWithParameterResult :: DiagScript -> Bool
-callscriptWithParameterResult (DiagScript [Callscript _ [_]]) = True
-callscriptWithParameterResult _ = False
-
-callscriptWithParametersResult :: DiagScript -> Bool
-callscriptWithParametersResult (DiagScript [Callscript _ [_,_,_]]) = True
-callscriptWithParametersResult _                   = False
-
 useractionSimpleResult :: DiagScript -> Bool
 useractionSimpleResult (DiagScript [Useraction "Dieser Text wird als MsgBox angezeigt!"]) = True
 useractionSimpleResult _ = False
@@ -240,6 +223,10 @@ generalAssertion parseResult checkResult =
 
 assertionTest testAssertion file  = do
   f <-  readFile file
+  -- scr <- PP.preProcess file           -- check if tests still work when they run through the preprocessor first
+  -- let f = case scr of
+  --          (Right r) -> r
+  --          (Left  l) -> ""
   let s = SP.parseScript f 
   return $ generalAssertion s testAssertion                  
 
