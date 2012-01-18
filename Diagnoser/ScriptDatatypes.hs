@@ -10,7 +10,6 @@ data ScriptElement = ScriptTestCase TestCase
                    | Group String [ScriptElement]
                    | Wait  Int
                    | Useraction String
-                   | Callscript FilePath [Parameter]
                    | CanMsg String Word16 [Word8]
                    | CyclicCanMsg String Word16 [Word8] Int [ScriptElement]
   deriving (Show,Eq)

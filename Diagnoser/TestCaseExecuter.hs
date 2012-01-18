@@ -61,7 +61,6 @@ runScriptElement n s@(CyclicCanMsg _ _ _ _ ss) = do writeScriptElementStart n s 
                                                     runScriptWithIndent (n + 2)  ss  
                                                     writeScriptElementEnd n s
 runScriptElement n s@(CanMsg name id dat)     = writeScriptElement n s >> putStrLn "!! CanMsg not Implemented!!!!!!!"
-runScriptElement n s@(Callscript file params) = writeScriptElement n s
 runScriptElement n s@(Wait time)              = writeScriptElement n s >> threadDelayMs time
 runScriptElement n (Useraction msg)           = putIndLn n $ "USERACTION " ++ "(" ++ quoted msg ++")"
 
@@ -90,7 +89,6 @@ writeScriptElementEnd n (CyclicCanMsg name id dat time ss) = putIndLn n $ "STOPC
 writeScriptElement n (CanMsg name id dat)     = putIndLn n $ "CANMSG " ++ bracketed name         ++ 
                                                              " ID "    ++ (bracketed . show) id  ++ 
                                                              " DATA "  ++ (bracketed . show) dat
-writeScriptElement n (Callscript file params) = putIndLn n $ "CALLSCRIPT " ++ file ++ " " ++(bracketed . show)  params  
 writeScriptElement n (Wait time)              = putIndLn n $ "WAIT "       ++ bracketed (show time)
 writeScriptElement n (ScriptTestCase (TestCase name 
                                              (DiagScriptMsg _ _ sent) 

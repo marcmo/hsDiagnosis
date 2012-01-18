@@ -1,0 +1,1 @@
+DIAG [ReadDataByIdentifier__DID_] SEND [_DID2_,22] EXPECT [62] TIMEOUT [100]

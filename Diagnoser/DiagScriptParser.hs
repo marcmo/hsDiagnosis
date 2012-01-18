@@ -3,7 +3,7 @@ module Diagnoser.DiagScriptParser
 where 
 
 import Data.Word(Word8,Word16)
-import qualified Text.ParserCombinators.Parsec.Token as P
+
 import Util.Encoding
 import Text.ParserCombinators.Parsec.Language
 import Control.Applicative
@@ -11,23 +11,7 @@ import Text.ParserCombinators.Parsec hiding (many, optional, (<|>))
 import Data.Char(toUpper)
 import Diagnoser.ScriptDatatypes
 
-
--- TODO: add remaning reserved names
-lexer :: P.TokenParser ()
-lexer = P.makeTokenParser $ haskellStyle
-           {  P.reservedNames = ["LOOPSTART", "LOOPEND","GROUPSTART","GROUPEND","DIAG","SEND","EXPECT","TIMEOUT","SOURCE","TARGET"]
-            , P.commentLine = "//"
-           }   
-
-whiteSpace = P.whiteSpace lexer
-symbol     = P.symbol lexer
-natural    = P.natural lexer
-parens     = P.parens lexer
-semi       = P.semi lexer
-identifier = P.identifier lexer
-reserved   = P.reserved lexer
-brackets   = P.brackets lexer
-reservedOp = P.reservedOp lexer
+import Diagnoser.ParserUtils
 
 
 diagscript :: Parser DiagScript
@@ -41,8 +25,6 @@ scriptelem = ScriptTestCase <$> testcase
          <|> group
          <|> cyclicCanMsg     
          <|> Useraction <$> (reserved "USERACTION" *> parens parseString)
-         <|> Callscript <$> (reserved "CALLSCRIPT" *> filePath)
-                        <*> (whiteSpace            *> option [] parameterList)
          <|> CanMsg     <$> (reserved "CANMSG"     *> nameInBrackets)         
                         <*> (reserved "ID"         *> brackets hexNum16)         
                         <*> (reserved "DATA"       *> hexList)
@@ -89,23 +71,11 @@ testcase = do name    <- reserved "DIAG"    *> nameInBrackets
       
 
 
-
+------------------------------------------------------- remove
 -- TODO: make filePath match windows/unix file paths
 filePath :: CharParser () FilePath
 filePath = many1 $ noneOf "\"\r\n "
-
--- TODO: maybe making parser accept whitespaces around equals sign
-parameter ::  GenParser Char () Parameter
-parameter  = do char '"'
-                name <- many1 $ oneOf varNameChars
-                char '"'; char '=';  char '"'
-                var <- hexListNoBrackets
-                char '"'
-                return $ Parameter name var
-
-
-parameterList ::  CharParser () [Parameter]
-parameterList = brackets $ sepBy parameter (symbol ";")
+----------------------------------------------------
 
 hexListNoBrackets ::  CharParser () [Word8]
 hexListNoBrackets = sepBy hexNum (symbol ",")
@@ -148,8 +118,6 @@ hexList = brackets (sepBy hexNum (symbol ","))
 parseString :: GenParser Char st String
 parseString = char '"' *> many (noneOf "\"") <* char '"'
 
-nameInBrackets = brackets (many1 $ noneOf "\"\r\n[]")
-varNameChars = ['a'..'z']++['A'..'Z']++"_- "++['0'..'9']
 
 
 
