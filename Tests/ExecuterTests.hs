@@ -47,7 +47,7 @@ executerTests =
 
 
 assert :: Bool -> HU.Assertion
-assert a    = HU.assertBool    "failed, but should not" a
+assert = HU.assertBool    "failed, but should not"
 
 assertNot :: Bool -> HU.Assertion
 assertNot a = HU.assertBool "failed not, but should" $ not a
@@ -57,7 +57,6 @@ simpleExamples :: [ScriptElement]
 simpleExamples  = 
   [Wait 100
   ,Useraction "This is a Messagle"
-  ,Callscript "/testfile.skr" [Parameter "name" [0x03], Parameter "name2" [0x03,0x04,0x05]]
   ,CanMsg     "canmsg1" 0x000 [0x1,0x2,0x3]           
   ,ScriptTestCase (TestCase "TestName" 
                             (DiagScriptMsg (Just 1) (Just 2) [0x00,0x11])         
@@ -90,7 +89,7 @@ allSkriptFiles = getRecursiveContents "Tests/diagnoser/"
 
 printScript f = do
   putStrLn "----------------------------------------------------------------"
-  putStrLn $"File: " ++  (fst f) ++ "\n"
+  putStrLn $"File: " ++  fst f ++ "\n"
   runScript (snd f)
   putStrLn "----------------------------------------------------------------"
   return True
