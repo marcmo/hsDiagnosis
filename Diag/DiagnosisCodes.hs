@@ -1,5 +1,6 @@
-module Diag.DiagnosisCodes where
 {- | common diagnosis return values. -}
+module Diag.DiagnosisCodes where 
+
 import Data.Word
 
 positive_response_offset 	            	  = 0x40 :: Word8

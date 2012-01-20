@@ -1,3 +1,4 @@
+-- | Small module for stuff the DiagScriptParser as well as the PreProcessor depend on.
 module Diagnoser.ParserUtils where
 import qualified Text.ParserCombinators.Parsec.Token as P
 import Text.ParserCombinators.Parsec.Language

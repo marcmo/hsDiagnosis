@@ -1,4 +1,5 @@
-module Diagnoser.DiagScriptTester where
+
+module Diagnoser.DiagScriptTester (runTestScript) where
 
 import Control.Monad
 import System.Environment (getArgs)
@@ -19,6 +20,7 @@ main = do
   (f:ip:_) <- getArgs
   runTestScript f ip
 
+-- | Run the script stored in file f on the device with ip.
 runTestScript ::  FilePath -> String -> IO ()
 runTestScript f ip = do
   diagScript <- readFile f
