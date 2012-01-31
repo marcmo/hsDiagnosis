@@ -126,11 +126,11 @@ main2 = do
   contents <- getContents
   runLex diagscript contents
 
--- | Parse a Diagnoser Script. Pure version without preProcessing, e.g. CALLSCRIPTs not possible.
+-- | Parse a Diagnoser Script. Pure version without 'PP.preProcess' ing, e.g. CALLSCRIPTs not possible.
 parseScript ::  String -> Either ParseError DiagScript
 parseScript = parse diagscript "(unknown)"
 
--- | Parse a Diagnoser Script stored in filePath. File is preProcessed before parsing, e.g. CALLSCRIPTs possible!
+-- | Parse a Diagnoser Script stored in a 'FilePath'. File is 'PP.preProcess'ed before parsing, e.g. CALLSCRIPTs possible!
 parseScriptFile ::  FilePath -> IO (Either ParseError DiagScript)
 parseScriptFile filePath = do pp <- (PP.preProcess filePath)
                               return $ either Left parseScript pp
