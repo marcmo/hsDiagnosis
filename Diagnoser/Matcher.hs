@@ -1,4 +1,6 @@
-module Diagnoser.Matcher where
+module Diagnoser.Matcher (matches,matcher,matcher1,matchQuestioned) 
+
+where
 
 import Data.Word
 import Diagnoser.ScriptDatatypes

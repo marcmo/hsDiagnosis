@@ -1,4 +1,6 @@
-module Diagnoser.PreProcessor 
+-- | The PreProcessor calls scripts with parameters as specified by the Diagnoser CALLSCRIPT elements, making them aviable to the parse.
+-- It's needed to keep the the actual parser Diagnoser.DiagScriptParser pure.
+module Diagnoser.PreProcessor (preProcess)
 
 where
 
@@ -172,7 +174,7 @@ prePro filePath nameValPairs =
                                       else  return . Left  $ head              (lefts  is)
 
 
-
+-- | Preprocess the file stored in filePath.
 preProcess :: FilePath -> IO (Either ParseError String)
 preProcess filePath = 
     prePro filePath []

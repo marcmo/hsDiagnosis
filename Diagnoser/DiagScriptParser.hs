@@ -1,4 +1,6 @@
-module Diagnoser.DiagScriptParser
+-- | Module for parsing Diagnoser scripts to Haskell data types 
+
+module Diagnoser.DiagScriptParser (parseScript, parseScriptFile)
 
 where 
 
@@ -12,6 +14,7 @@ import Data.Char(toUpper)
 import Diagnoser.ScriptDatatypes
 
 import Diagnoser.ParserUtils
+import qualified Diagnoser.PreProcessor as PP (preProcess)
 
 
 diagscript :: Parser DiagScript
@@ -123,8 +126,14 @@ main2 = do
   contents <- getContents
   runLex diagscript contents
 
+-- | Parse a Diagnoser Script. Pure version without preProcessing, e.g. CALLSCRIPTs not possible.
 parseScript ::  String -> Either ParseError DiagScript
 parseScript = parse diagscript "(unknown)"
+
+-- | Parse a Diagnoser Script stored in filePath. File is preProcessed before parsing, e.g. CALLSCRIPTs possible!
+parseScriptFile ::  FilePath -> IO (Either ParseError DiagScript)
+parseScriptFile filePath = do pp <- (PP.preProcess filePath)
+                              return $ either Left parseScript pp
 
 
 
