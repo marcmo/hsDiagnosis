@@ -16,7 +16,7 @@ Cabal-version:       >=1.2
 
 Executable luaexecuter
   Main-is:            LuaMain.hs
-  Build-Depends:      haskell98,bytestring,parsec>=3.0,base>=4,mtl,network,directory, time, split, deepseq, cereal, regex-compat, hslua, HUnit, test-framework-hunit,test-framework, cmdargs, filepath, containers
+  Build-Depends:      bytestring,parsec>=3.0,base>=4,mtl,network,directory, time, split, deepseq, cereal, regex-compat, hslua, HUnit, test-framework-hunit,test-framework, cmdargs, filepath, containers
   -- GHC-Options:        -threaded
 
 Executable diagexecuter
