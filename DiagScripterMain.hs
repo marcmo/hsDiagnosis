@@ -2,33 +2,38 @@
 module Main where
 
 import System.Console.CmdArgs
-import Com.DiagClient(host)
+import qualified Com.DiagClient as DC (host ,DiagConfig(..))
 import DiagnosticConfig(conf)
 import Control.Monad (when)
 import Network.Socket
 import Diagnoser.DiagScriptTester(runTestScript)
+import Config(DiagExecuterArgs(..), mkConf,defaultConfigFile)
 
-data DiagScripter = DiagTest {
-  script :: String,
-  ip :: String,
-  choice :: Bool
-} deriving (Show, Data, Typeable)
+-- if a better help message and improved flags are required we better switch from CmdArgs to System.Console.GetOpt
 
-diagTest = DiagTest {
-                    script = def &= typDir &= help "diagnoser script to run",
-                    ip = (host conf) &= help "ip address of ecu",
-                    choice = enum [True &= help "say yes", False &= help "say no"]
-                  } &= help "run diagnosis tests"
+diagConf = DiagExecuterArgs {
+                    script = def &= args, -- &= typFile   &= help "diagnoser script to run",
+                    config = def &= typFile   &= help ("configuration file, default points to \"" ++ defaultConfigFile ++ "\""),
+                    ip     = def              &= help "ip address of ecu",
+                    port   = def              &= help "ip address port",
+                    source = def &= typ "Hex" &= help "default source, as hex e.g. f4",
+                    target = def &= typ "Hex" &= help "default target, as hex e.g. 10",
+                    debug  = def &= typ "Bool" &= help "default target, as hex e.g. 10",
+                    timeout= def &= typ "Int" &= help "timeout for responses of diagnosis messages" 
+                  } &= help "run diagnosis tests on a Diagnoser .skr file" 
 
 main ::  IO ()
 main = withSocketsDo $ do 
-  actions <- cmdArgs $ ((modes [diagTest])
+  dconf <- cmdArgs $ (modes [diagConf]
                       &= summary "DiagScripter 0.1.0, (c) Oliver Mueller 2010-2011")
                       &= verbosity
-  execute actions
+  c  <- mkConf dconf
+  either (\argName -> putStrLn $ argName ++ " not specified. Must be set per flag or config file")
+         (execute $ script dconf)
+         c 
 
-execute :: DiagScripter -> IO ()
-execute (DiagTest s ip c) = do
-    print $ "running script " ++ s ++ " on ip " ++ ip ++ "choice: " ++ show c
-    runTestScript s ip
+execute :: FilePath -> DC.DiagConfig -> IO ()
+execute f conf@(DC.MkDiagConfig ip _ _ _ _ _ ) = do
+    print $ "running script " ++ f ++ " on ip " ++ ip
+    runTestScript f conf
 
