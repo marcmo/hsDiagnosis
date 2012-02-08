@@ -1,9 +1,12 @@
 {-# LANGUAGE DeriveDataTypeable #-}
 module Config
-     (defaultConfigFile,
-      DiagExecuterArgs(..),
-      mkConf
-     ) 
+     -- (defaultConfigFile,
+     --  diagConfigInFromFile,
+     --  mergeDiagConfigIns,
+     --  DiagConfigIn(..),
+     --  hexIt,
+     --  inToDiagConfig,
+     --  diagConfigInGroupFromFile) 
 
 where
 
@@ -22,25 +25,27 @@ import Control.Applicative
 import Data.Typeable
 import Data.Data
 
+import qualified Data.List as DL (intersperse)
 
 defaultConfigFile = "config.cfg"
 -- maybe better(?):
 -- defaultConfigFile = do home <- System.Directory.getUserDocumentsDirectory 
 --                        return $ home ++ "/.hsDiagnosis/config.cfg"
 
-defaultConfig :: IO CT.Config
-defaultConfig = confFromFile defaultConfigFile 
+configFromFile :: FilePath -> IO CT.Config
+configFromFile file = do (conf,_) <- C.autoReload C.autoConfig [C.Required file]
+                         return conf
 
-confFromFile :: FilePath -> IO CT.Config
-confFromFile file = do (conf,_) <- C.autoReload C.autoConfig [C.Required file]
-                       return conf
+defaultConfig :: IO CT.Config
+defaultConfig = configFromFile defaultConfigFile 
+
 
 --------- not used from command line tool --------------------------------------
-configGroup :: FilePath -> String -> IO CT.Config
-configGroup file groupName = do c <- confFromFile file
-                                return $ C.subconfig (T.pack groupName) c
+configGroupFromFile :: FilePath -> String -> IO CT.Config
+configGroupFromFile file groupName = do c <- configFromFile file
+                                        return $ C.subconfig (T.pack groupName) c
 
-group1 = configGroup defaultConfigFile "group1"
+group1    = configGroupFromFile defaultConfigFile "group1"
 --------------------------------------------------------------------------------
 
 hexIt :: String -> Maybe Word8
@@ -52,7 +57,6 @@ hexIt s = case readHex s of
 lookupValue :: IO CT.Config -> String -> IO (Maybe CT.Value)
 lookupValue conf name = do c <- conf
                            C.lookup c (T.pack name) 
-
 
 valueToInt :: IO (Maybe CT.Value) -> IO (Maybe Int)
 valueToInt v = do o <- v;  return $ o  >>= CT.convert
@@ -71,51 +75,47 @@ lookupIp      conf = valueToString $ lookupValue conf "ip"
 lookupPort    conf = valueToInt    $ lookupValue conf "port"  
 lookupTarget  conf = valueToHex    $ lookupValue conf "target"
 lookupSource  conf = valueToHex    $ lookupValue conf "source"
-lookupDebug   conf = valueToBool   $ lookupValue conf "debug"
-lookupTimeout conf = valueToInt    $ lookupValue conf "standart-timeout"
+lookupVerbose conf = valueToBool   $ lookupValue conf "verbose"
+lookupTimeout conf = valueToInt    $ lookupValue conf "timeout"
 
 defaultIp     = lookupIp      defaultConfig
 defaultPort   = lookupPort    defaultConfig
 defaultTarget = lookupTarget  defaultConfig
 defaultSource = lookupSource  defaultConfig
-defaultDebug  = lookupDebug   defaultConfig
+defaultVerbose= lookupVerbose defaultConfig
 defaultTimeout= lookupTimeout defaultConfig
 
 
-mkConf :: DiagExecuterArgs -> IO (Either String DC.DiagConfig)
-mkConf (DiagExecuterArgs _ configFile ip port source target debug timeout) = do
-  let c = maybe defaultConfig confFromFile configFile
-  iD  <- lookupIp      c
-  pD  <- lookupPort    c
-  tD  <- lookupTarget  c
-  sD  <- lookupSource  c
-  dD  <- lookupDebug   c
-  oD  <- lookupTimeout c
-  return $ DC.MkDiagConfig <$> mergeConfigItems "ip"      ip      iD
-                           <*> mergeConfigItems "port"    port    pD
-                           <*> mergeConfigItems "source"  (source >>= hexIt) sD
-                           <*> mergeConfigItems "target"  (target >>= hexIt) tD
-                           <*> mergeConfigItems "debug"   debug   dD
-                           <*> mergeConfigItems "timeout" timeout oD  
--- drawback: returns only the the first undefined element
--- returning a combination of all undefined elements would improve the error message
+data DiagConfigIn = DiagConfigIn (Maybe String) (Maybe Int) (Maybe Word8) (Maybe Word8) (Maybe Bool) (Maybe Int) 
+  deriving (Show)
 
-mergeConfigItems :: String -> Maybe a -> Maybe a -> Either String a
-mergeConfigItems name majorItem minorItem = 
-  case majorItem <|> minorItem of
-    Nothing  -> Left name
-    (Just a) -> Right a  
+diagConfigIn :: IO CT.Config -> IO DiagConfigIn
+diagConfigIn c = do
+  DiagConfigIn <$> lookupIp      c 
+               <*> lookupPort    c
+               <*> lookupSource  c
+               <*> lookupTarget  c
+               <*> lookupVerbose c
+               <*> lookupTimeout c
+
+diagConfigInFromFile :: FilePath -> IO DiagConfigIn
+diagConfigInFromFile      f    = diagConfigIn (configFromFile f)
+diagConfigInGroupFromFile f g  = diagConfigIn (configGroupFromFile f g)
+
+mergeDiagConfigIns :: DiagConfigIn -> DiagConfigIn -> DiagConfigIn
+mergeDiagConfigIns (DiagConfigIn ip1 host1 source1 target1 verbose1 timeout1) 
+                 (DiagConfigIn ip2 host2 source2 target2 verbose2 timeout2) = 
+  DiagConfigIn (ip1      <|> ip2)
+               (host1    <|> host2)  
+               (source1  <|> source2)
+               (target1  <|> target2)
+               (verbose1 <|> verbose2)
+               (timeout1 <|> timeout2)
+
+inToDiagConfig :: DiagConfigIn -> Maybe DC.DiagConfig
+inToDiagConfig (DiagConfigIn (Just ip) (Just port) (Just target) (Just source) (Just verbose) (Just timeout)) = 
+  Just $ DC.MkDiagConfig ip port target source verbose timeout
+inToDiagConfig _ = Nothing
 
 
-
-data DiagExecuterArgs = DiagExecuterArgs {
-  script :: String,
-  config :: Maybe FilePath,
-  ip     :: Maybe String,
-  port   :: Maybe Int,
-  source :: Maybe String,
-  target :: Maybe String,
-  debug  :: Maybe Bool,
-  timeout :: Maybe Int
-} deriving (Show, Data, Typeable)
-
+--a = configFromFile defaultConfigFile
