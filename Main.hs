@@ -63,8 +63,9 @@ execute (Logging logIp e m) = do
   when e enable
   when m $ showMappingWithConf conf
 execute (DiagTest ip s) = do
-    print $ "running script " ++ s
-    runTestScript s ip
+--    print $ "running script " ++ s
+--    runTestScript s ip
+  return ()
 execute (LuaTest s) = do
     print $ "running lua script " ++ s
     executeLuaScript s
