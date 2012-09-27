@@ -12,7 +12,7 @@ module Com.DiagClient
       string2hex,
       Word8,
       DiagConfig(..)
-    )    
+    )
 where
 
 import Com.DiagMessage
@@ -83,7 +83,7 @@ run async msg =
                     (\(e :: HsfzException) -> (void (print e >> putMVar m mempty)))
         -- io $ putStrLn "hickup"
         pushOutMessage msg
-        io $ takeMVar m 
+        io $ takeMVar m
   where
     pushOutMessage :: HSFZMessage -> Net ()
     pushOutMessage m = do
@@ -110,7 +110,7 @@ listenForResponse m =
 
     receiveDataMsg ::  Ptr CChar -> Net MessageStream
     receiveDataMsg buf = do
-        stream@(MessageStream xs) <- receiveMsg buf 
+        stream@(MessageStream xs) <- receiveMsg buf
         if mempty == stream
           then log ("<-- " ++ show stream) >> return stream
           else
@@ -139,7 +139,7 @@ listenForResponse m =
       io yield
       -- log (".")
       inputAvailable <- io $ hWaitForInput h pollingMs
-      if inputAvailable then return True 
+      if inputAvailable then return True
         else if waitTime_ms > 0
               then waitForData (waitTime_ms - pollingMs)
               else return False

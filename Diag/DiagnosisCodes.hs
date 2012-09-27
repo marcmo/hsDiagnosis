@@ -1,5 +1,5 @@
 {- | common diagnosis return values. -}
-module Diag.DiagnosisCodes where 
+module Diag.DiagnosisCodes where
 
 import Data.Word
 
@@ -29,9 +29,9 @@ data DiagRequestCode =
 	| REQUEST_CONTROL_DTC_SETTING
 	| REQUEST_RESPONSE_ON_EVENT
 	| REQUEST_CLEAR_DIAGNOSTIC_INFORMATION
- 
+
 requestToCode ::  [(DiagRequestCode, Int)]
-requestToCode = [ 
+requestToCode = [
                 (REQUEST_DIAGNOSTIC_SESSION_CONTROL,0x10),
                 (REQUEST_ECU_RESET,0x11),
                 (REQUEST_READ_DTC_INFORMATION,0x19),
@@ -54,7 +54,7 @@ codeToRequest = map (\(x, y) -> (y, x)) requestToCode
 id_routine_control_start_routine      = 0x01 :: Word8
 id_routine_control_stop_routine       = 0x02 :: Word8
 id_routine_control_get_routine_result = 0x03 :: Word8
- 
+
 service_id_length     = 1 :: Word8
 subfunction_id_length = 1 :: Word8
 routine_id_length     = 2 :: Word8
@@ -63,7 +63,7 @@ data_id_length        = 2 :: Word8
 {- | Return codes used throughout diagnosis framework.
  - @note
  - The prefix ISO_ indicates that this is an official ISO14229 code.
- - 
+ -
  - @imporant
  - The DiagReturnCode::Type NOT_RESPONSIBLE has a special meaning. Returning
  - any other value from verify indicates that the job has taken control
@@ -71,7 +71,7 @@ data_id_length        = 2 :: Word8
  - of the request in question!
  -}
 
-data DiagErrorCode = 
+data DiagErrorCode =
               ISO_GENERAL_REJECT
               | ISO_SERVICE_NOT_SUPPORTED
               | ISO_SUBFUNCTION_NOT_SUPPORTED
@@ -108,7 +108,7 @@ errorOfCode :: Word8 -> DiagErrorCode
 errorOfCode f = case lookup f codeToError of
                 Just x -> x
                 _ -> error "Invalid code in errorOfCode"
-errorToCodeAndName = [ 
+errorToCodeAndName = [
                       (ISO_GENERAL_REJECT,(0x10,"ISO_GENERAL_REJECT")),
                       (ISO_SERVICE_NOT_SUPPORTED,(0x11,"ISO_SERVICE_NOT_SUPPORTED")),
                       (ISO_SUBFUNCTION_NOT_SUPPORTED,(0x12,"ISO_SUBFUNCTION_NOT_SUPPORTED")),

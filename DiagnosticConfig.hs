@@ -10,7 +10,7 @@ module DiagnosticConfig
       currentIp,
       msgTunnelIp,
       getIp
-     ) 
+     )
 
 where
 

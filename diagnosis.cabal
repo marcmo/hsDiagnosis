@@ -1,31 +1,37 @@
-Name:                diagnosis
-Version:             0.1.2
-Synopsis:            haskell implementation of diagnostic framework
-Description:         This package consists of 3 different programms:
-                     .
-                     * an executable with an embedded Lua interpreter. This can be used to script the diagnostic
-                      functionalities using Lua
-                     .
-                     * an interpreter for existing diagnoser scripts
-                     .
-                     * a standalone client program that can be used to send diagnosis messages
-License:             BSD3
-License-file:        LICENSE
-Author:              oliver mueller
-Maintainer:          oliver.mueller@gmail.com
-Category:            Development
-Build-type:          Simple
-Cabal-version:       >=1.2
-
+Name:               diagnosis
+Version:            0.1.2
+Synopsis:           haskell implementation of diagnostic framework
+Description:        This package consists of 3 different programms:
+                    .
+                    * an executable with an embedded Lua interpreter. This can be used to script the diagnostic
+                     functionalities using Lua
+                    .
+                    * an interpreter for existing diagnoser scripts
+                    .
+                    * a standalone client program that can be used to send diagnosis messages
+License:            BSD3
+License-file:       LICENSE
+Author:             oliver mueller
+Maintainer:         oliver.mueller@gmail.com
+Category:           Development
+Build-type:         Simple
+Cabal-version:      >=1.6
+source-repository head
+  type:             git
+  location:         https://github.com/marcmo/hsDiagnosis
 Executable luaexecuter
-  Main-is:            LuaMain.hs
-  Build-Depends:      bytestring,parsec>=3.0,base>=4,mtl,network,directory, time, split, deepseq, cereal, regex-compat, hslua, HUnit, test-framework-hunit,test-framework, cmdargs, filepath, containers, configurator, text
+  Main-is:          LuaMain.hs
+  Build-Depends:    bytestring,parsec>=3.0,base>=4 && < 5,mtl,network,directory, time, split, deepseq, cereal, regex-compat, hslua, HUnit, test-framework-hunit,test-framework, cmdargs, filepath, containers, configurator, text, test-framework-quickcheck2
   -- GHC-Options:        -threaded
 
 Executable diagexecuter
-  Main-is:            DiagScripterMain.hs
+  Main-is:          DiagScripterMain.hs
 
 Executable diagTool
-  Main-is:            Main.hs
+  Main-is:          Main.hs
 
-  
+Test-Suite tests
+    type:       exitcode-stdio-1.0
+    main-is:    Tests/testMain.hs
+    build-depends: QuickCheck
+

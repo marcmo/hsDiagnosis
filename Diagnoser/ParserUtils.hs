@@ -10,7 +10,7 @@ lexer :: P.TokenParser ()
 lexer = P.makeTokenParser $ haskellStyle
            {  P.reservedNames = ["LOOPSTART", "LOOPEND","GROUPSTART","GROUPEND","DIAG","SEND","EXPECT","TIMEOUT","SOURCE","TARGET"]
             , P.commentLine = "//"
-           }   
+           }
 
 whiteSpace = P.whiteSpace lexer
 symbol     = P.symbol lexer

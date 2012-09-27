@@ -1,13 +1,12 @@
--- | Module for parsing Diagnoser scripts to Haskell data types 
+-- | Module for parsing Diagnoser scripts to Haskell data types
 
 module Diagnoser.DiagScriptParser (parseScript, parseScriptFile)
 
-where 
+where
 
 import Data.Word(Word8,Word16)
 
 import Util.Encoding
-import Text.ParserCombinators.Parsec.Language
 import Control.Applicative
 import Text.ParserCombinators.Parsec hiding (many, optional, (<|>))
 import Data.Char(toUpper)
@@ -26,47 +25,47 @@ scriptelem :: Parser ScriptElement
 scriptelem = ScriptTestCase <$> testcase
          <|> loop
          <|> group
-         <|> cyclicCanMsg     
+         <|> cyclicCanMsg
          <|> Useraction <$> (reserved "USERACTION" *> parens stringLiteral)
-         <|> CanMsg     <$> (reserved "CANMSG"     *> nameInBrackets)         
-                        <*> (reserved "ID"         *> brackets hexNum16)         
+         <|> CanMsg     <$> (reserved "CANMSG"     *> nameInBrackets)
+                        <*> (reserved "ID"         *> brackets hexNum16)
                         <*> (reserved "DATA"       *> hexList)
          <|> Wait       <$> fmap read
                             (reserved "WAIT"       *> brackets (many1 digit))
          <?> "scriptelement"
 
-         
+
 loop = do name  <- reserved "LOOPSTART" *>  nameInBrackets
-          count <- reserved "COUNT"     *> brackets (many1 digit)
-          ss    <- many scriptelem <* 
-                   reserved "LOOPEND"    <* brackets (string name) 
-          return $ Loop name (read count) ss
+          cnt <- reserved "COUNT"     *> brackets (many1 digit)
+          ss    <- many scriptelem <*
+                   reserved "LOOPEND"    <* brackets (string name)
+          return $ Loop name (read cnt) ss
 
 group =  do name <- reserved "GROUPSTART" *> nameInBrackets
-            ss   <- many1 scriptelem      <*  
+            ss   <- many1 scriptelem      <*
                     reserved "GROUPEND"   <* brackets (string name)
             return $ Group name ss
 
 cyclicCanMsg = do name  <- reserved "STARTCYCLICCANMSG" *> nameInBrackets
-                  id    <- reserved "ID"                *> brackets hexNum16
+                  canId    <- reserved "ID"                *> brackets hexNum16
                   dat   <- reserved "DATA"              *> hexList
-                  cycle <- reserved "CYCLE"             *> brackets (many1 digit)
-                  ss    <- many scriptelem              <* 
+                  cyc <- reserved "CYCLE"             *> brackets (many1 digit)
+                  ss    <- many scriptelem              <*
                            reserved "STOPCYCLICCANMSG"  <* brackets (string name)
-                  return $ CyclicCanMsg name id dat (read cycle) ss
+                  return $ CyclicCanMsg name canId dat (read cyc) ss
 
 testcase :: Parser TestCase
 testcase = do name    <- reserved "DIAG"    *> nameInBrackets
               send    <- reserved "SEND"    *> hexList
               expect  <- reserved "EXPECT"  *> expectedMsg
-              timeout <- reserved "TIMEOUT" *> brackets (many1 digit)
+              time_out <- reserved "TIMEOUT" *> brackets (many1 digit)
               snt     <- sourceAndTarget
-              return $ uncurry (mkTestCase name send expect (read timeout)) snt
+              return $ uncurry (mkTestCase name send expect (read time_out)) snt
     where sourceAndTarget :: CharParser () (Maybe Word8, Maybe Word8)
-          sourceAndTarget = do source <- reserved "SOURCE" *> brackets hexNum
-                               target <- reserved "TARGET" *> brackets hexNum
-                               return (Just source, Just target)
-                         <|> return (Nothing, Nothing)                
+          sourceAndTarget = do src <- reserved "SOURCE" *> brackets hexNum
+                               tgt <- reserved "TARGET" *> brackets hexNum
+                               return (Just src, Just tgt)
+                         <|> return (Nothing, Nothing)
 
 expectedMsg :: GenParser Char () ExpectedPayload
 expectedMsg =  do try (brackets $ string "")
@@ -79,15 +78,15 @@ expectedMsg =  do try (brackets $ string "")
                   return $ ExpectedPayload ret
 
 match ::  GenParser Char () Match
-match = do s <- try (char '*')
-           return Star 
+match = do try (char '*')
+           return Star
        <|> do s <- try (count 2 (oneOf (['0'..'9']++['a'..'f']++['A'..'F'])))
               return $ Match (string2hex s)
        <|> do s <- try (count 2 (oneOf (['0'..'9']++['a'..'f']++['A'..'F']++ "?")))
               return $ Questioned (map toUpper s)
        <|> do s <- oneOf (['0'..'9']++['a'..'f']++['A'..'F'])
               return $ Match (string2hex [s])
-       <?> "match" 
+       <?> "match"
 
 matches ::  CharParser () [Match]
 matches =  sepBy match (symbol ",")
@@ -105,24 +104,24 @@ hexNum16 :: GenParser Char st Word16
 hexNum16 = do s <- many1 (oneOf (['0'..'9']++['a'..'f']++['A'..'F']))
               return $ string2hex16 s
 
-run :: Show a => Parser a -> String -> IO ()
-run p input =
-    case parse p "" input of
-        Left err -> do putStr "parse error at "
-                       print err
-        Right x  -> print x
-
-runLex :: Show a => Parser a -> String -> IO ()
-runLex p input
-    = run (do  whiteSpace
-               x <-p
-               eof
-               return x
-          ) input
-
-main2 = do 
-  contents <- getContents
-  runLex diagscript contents
+-- run :: Show a => Parser a -> String -> IO ()
+-- run p input =
+--     case parse p "" input of
+--         Left err -> do putStr "parse error at "
+--                        print err
+--         Right x  -> print x
+--
+-- runLex :: Show a => Parser a -> String -> IO ()
+-- runLex p
+--     = run (do  whiteSpace
+--                x <-p
+--                eof
+--                return x
+--           )
+--
+-- main2 = do
+--   contents <- getContents
+--   runLex diagscript contents
 
 -- | Parse a Diagnoser Script. Pure version without 'PP.preProcess' ing, e.g. CALLSCRIPTs not possible.
 parseScript ::  String -> Either ParseError DiagScript
@@ -130,7 +129,7 @@ parseScript = parse diagscript "(unknown)"
 
 -- | Parse a Diagnoser Script stored in a 'FilePath'. File is 'PP.preProcess'ed before parsing, e.g. CALLSCRIPTs possible!
 parseScriptFile ::  FilePath -> IO (Either ParseError DiagScript)
-parseScriptFile filePath = do pp <- (PP.preProcess filePath)
+parseScriptFile filePath = do pp <- PP.preProcess filePath
                               return $ either Left parseScript pp
 
 

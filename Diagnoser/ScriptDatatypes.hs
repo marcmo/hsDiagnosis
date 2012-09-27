@@ -1,5 +1,14 @@
 module Diagnoser.ScriptDatatypes
-
+    (
+       Match(..)
+      ,ExpectedPayload(..)
+      ,ExpectedMsg(..)
+      ,TestCase(..)
+      ,DiagScript(..)
+      ,ScriptElement(..)
+      ,DiagScriptMsg(..)
+      ,mkTestCase
+    )
 where
 
 import Data.Word(Word8,Word16)
@@ -27,19 +36,15 @@ data TestCase = TestCase {
   target   :: Maybe Word8
 } deriving (Show,Eq)
 
-mkTestCase n m e time s t = TestCase n sendM exp time s t
-  where sendM = DiagScriptMsg s t m
-        exp   = ExpectedMsg t s e
-
 data Match = Match Word8
-           | Questioned String        
-           | Star 
+           | Questioned String
+           | Star
      deriving (Eq,Show)
 
 data ExpectedPayload  = ExpectedPayload  [[Match]] --Todo: rename
                       | EveryOrNoMsg   -- corresponds to [#]
                       | EveryMsg       -- corresponds to [*]
-                      | NoMsg          -- corresponds to [] 
+                      | NoMsg          -- corresponds to []
       deriving (Eq,Show)
 
 data ExpectedMsg = ExpectedMsg {
@@ -55,23 +60,23 @@ data DiagScriptMsg = DiagScriptMsg {
 
 } deriving (Eq,Show)
 
-type ParaName = String   
-type ParaValue = [Word8] 
+type ParaName = String
+type ParaValue = [Word8]
 data Parameter = Parameter ParaName ParaValue
                   deriving (Eq)
 
 
 -- Note: show parameter list now as in specification
-instance Show Parameter where 
+instance Show Parameter where
   show (Parameter name value) = '"' : name ++ "\"=\"" ++ showAsHexString value ++ "\""
   showList cs = showChar '[' . showl cs
               where showl [c]    = shows c . showChar ']'
-                    showl (c:cs) = shows c . showChar ';' . showl cs 
+                    showl (c:css) = shows c . showChar ';' . showl css
+                    showl _ = \_ -> ""
 
-a = [Parameter "name" [0x10], Parameter "name2" [0x10]]
-
-
-
+mkTestCase n m e time s t = TestCase n sendM expect time s t
+   where sendM = DiagScriptMsg s t m
+         expect   = ExpectedMsg t s e
 
 
 
