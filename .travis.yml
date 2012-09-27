@@ -1,1 +1,5 @@
 language: haskell
+script:
+  - bundle exec rake test
+before_script:
+  - bundle
