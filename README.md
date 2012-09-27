@@ -1,4 +1,4 @@
-[![Build Status](https://secure.travis-ci.org/marcmo/hsDiagnosis.git)](http://travis-ci.org/marcmo/hsDiagnosis)
+[![Build Status](https://secure.travis-ci.org/marcmo/hsDiagnosis.png)](http://travis-ci.org/marcmo/hsDiagnosis)
 
 # Framework for diagnostic communication over ethernet
 
