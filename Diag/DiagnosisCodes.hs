@@ -30,6 +30,7 @@ data DiagRequestCode =
 	| REQUEST_RESPONSE_ON_EVENT
 	| REQUEST_CLEAR_DIAGNOSTIC_INFORMATION
  
+requestToCode ::  [(DiagRequestCode, Int)]
 requestToCode = [ 
                 (REQUEST_DIAGNOSTIC_SESSION_CONTROL,0x10),
                 (REQUEST_ECU_RESET,0x11),
@@ -97,16 +98,16 @@ data DiagErrorCode =
 codeOfError :: DiagErrorCode -> Word8
 codeOfError f = case lookup f errorToCodeAndName of
                 Just x -> fst x
-                _ -> error $ "Internal error in codeOfError"
+                _ -> error "Internal error in codeOfError"
 nameOfError :: Word8 -> String
 nameOfError f = case lookup f codeToErrorName of
                 Just x -> x
-                _ -> error $ "Internal error in codeOfError"
+                _ -> error "Internal error in codeOfError"
 
 errorOfCode :: Word8 -> DiagErrorCode
 errorOfCode f = case lookup f codeToError of
                 Just x -> x
-                _ -> error $ "Invalid code in errorOfCode"
+                _ -> error "Invalid code in errorOfCode"
 errorToCodeAndName = [ 
                       (ISO_GENERAL_REJECT,(0x10,"ISO_GENERAL_REJECT")),
                       (ISO_SERVICE_NOT_SUPPORTED,(0x11,"ISO_SERVICE_NOT_SUPPORTED")),
@@ -131,6 +132,6 @@ errorToCodeAndName = [
                       (DIAG_OK,(0xFF,"DIAG_OK"))
            ]
 
-codeToError = map (\(x, (y,name)) -> (y, x)) errorToCodeAndName
-codeToErrorName = map (\(x, (y,name)) -> (y, name)) errorToCodeAndName
+codeToError = map (\(x, (y,_)) -> (y, x)) errorToCodeAndName
+codeToErrorName = map (\(_, (y,name)) -> (y, name)) errorToCodeAndName
 

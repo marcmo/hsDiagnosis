@@ -4,7 +4,7 @@ module Com.HSFZMessage
 where
 
 import Data.Word(Word8)
-import Util.Encoding(showBinString,showAsHexString)
+import Util.Encoding(showBinString,showAsHexString,showAsHex)
 import qualified Data.ByteString as S
 import qualified Data.ByteString.Lazy as L
 import Data.Serialize.Get
@@ -20,10 +20,11 @@ data ControlBit = AckBit | DataBit | GetVehicleIdentBit deriving (Show,Eq)
 control2Int DataBit = 0x1 :: Word8
 control2Int AckBit = 0x2 :: Word8
 control2Int GetVehicleIdentBit = 0x11 :: Word8
-int2control 0x1 = DataBit
-int2control 0x2 = AckBit
-int2control 0x11 = GetVehicleIdentBit
-int2control x = error $ "int2control not defined for: " ++ show x 
+int2control cbit 
+  | cbit == 0x1 = DataBit
+  | cbit == 0x2 = AckBit
+  | cbit == 0x11 = GetVehicleIdentBit
+  | otherwise = error $ "int2control not defined for: " ++ showAsHex cbit
 
 data HSFZMessage = HSFZMessage {
   controllBit :: ControlBit,
@@ -51,8 +52,8 @@ instance Serialize HSFZMessage where
     len <- getWord32be
     _ <- getWord8 -- not needed
     cbit <- getWord8
-    payload <- getBytes (fromIntegral len)
-    return $ HSFZMessage (int2control cbit) (fromIntegral len) (S.unpack payload)
+    p <- getBytes (fromIntegral len)
+    return $ HSFZMessage (int2control cbit) (fromIntegral len) (S.unpack p)
 instance Serialize MessageStream where
   put (MessageStream xs) = mapM_ put xs
   get = do
@@ -89,7 +90,7 @@ deserialize2Hsfz s
 deserialize2HsfzStream :: S.ByteString -> MessageStream
 deserialize2HsfzStream s = either
     (const (MessageStream []))
-    (id)
+    id
     (runGet get s)
 serializeFromStream :: MessageStream -> S.ByteString
 serializeFromStream = runPut . put

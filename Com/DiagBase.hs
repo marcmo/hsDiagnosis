@@ -36,20 +36,21 @@ printNegativeResponses xs =
       print err
       print $ "negative response: " ++ nameOfError err
 
-isNegativeResponse (DiagnosisMessage _ _ (x:xs)) =
+isNegativeResponse (DiagnosisMessage _ _ (x:_)) =
   x == negative_response_identifier
+isNegativeResponse _ = False
 
 liftReader a = ReaderT (return . runReader a)
 
 responsePending ::  HSFZMessage -> Bool
 responsePending m = let p = diagPayload (hsfz2diag m) in
-      length p == 3 && p!!0 == 0x7f && p!!2 == 0x78
+      length p == 3 && head p == 0x7f && p!!2 == 0x78
 
 
 -- Convenience.
 io :: IO a -> Net a
 io = liftIO
-log ::  (Show a) => a -> Net ()
+log :: String -> Net ()
 log s = do
     v <- asks chatty
     when v $ io $ print s

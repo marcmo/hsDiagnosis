@@ -105,8 +105,6 @@ hexNum16 :: GenParser Char st Word16
 hexNum16 = do s <- many1 (oneOf (['0'..'9']++['a'..'f']++['A'..'F']))
               return $ string2hex16 s
 
-
-
 run :: Show a => Parser a -> String -> IO ()
 run p input =
     case parse p "" input of

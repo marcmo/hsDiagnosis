@@ -48,7 +48,7 @@ sendDataAsync c xs = do
   return ()
 
 sendDataTo :: DiagConfig -> [Word8] -> Word8 -> Word8 -> IO [DiagnosisMessage]
-sendDataTo c xs src target = (sendDiagMsg c False . DiagnosisMessage src target) xs
+sendDataTo c xs src trgt = (sendDiagMsg c False . DiagnosisMessage src trgt) xs
 
 sendBytes :: DiagConfig -> [Word8] -> IO MessageStream
 sendBytes c = sendMessage c False . dataMessage
@@ -80,16 +80,16 @@ run async msg =
         ReaderT $ \r ->
           forkIO $ catch
                     (runReaderT (listenForResponse m) r)
-                    (\(e :: HsfzException) -> print e >> putMVar m mempty >> return ())
+                    (\(e :: HsfzException) -> (void (print e >> putMVar m mempty)))
         -- io $ putStrLn "hickup"
         pushOutMessage msg
         io $ takeMVar m 
   where
     pushOutMessage :: HSFZMessage -> Net ()
-    pushOutMessage msg = do
+    pushOutMessage m = do
         h <- asks diagHandle
-        log ("sending --> " ++ show msg)
-        io $ hPutStr h (msg2ByteString msg)
+        log ("sending --> " ++ show m)
+        io $ hPutStr h (msg2ByteString m)
         io $ hFlush h -- Make sure that we send data immediately
 
 listenForResponse ::  MVar MessageStream -> Net ()
