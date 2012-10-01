@@ -4,13 +4,12 @@ import qualified Test.HUnit as HU
 import Test.Framework (testGroup, Test)
 import Test.Framework.Providers.HUnit (testCase)
 import Diagnoser.PreProcessor
-import Data.List
 
-scriptPath = "Tests/diagnoser/implemented/Callscript" 
+scriptPath = "Tests/diagnoser/implemented/Callscript"
 
 
 preProcessorTests :: IO Test
-preProcessorTests = 
+preProcessorTests =
   do simpleA   <- assertPreProcess simple
      withParametersA <- assertPreProcess withParameters
      betweenA <- assertPreProcess between
@@ -43,7 +42,7 @@ between = ("/between.skr"
           ,"WAIT [100]\nDIAG [ReadDataByIdentifier_3] SEND [22,F1,90] EXPECT [*] TIMEOUT [1400]\nDIAG [abc] SEND [01,02,03] EXPECT [aa,bb,cc] TIMEOUT [2000] SOURCE [A0] TARGET [B0]")
 
 withParameters = ("/withParameters.skr",
-                  "DIAG [ReadDataByIdentifier__DID_] SEND [22,f1,90] EXPECT [62,f1,90,a1,b2] TIMEOUT [1000]")           
+                  "DIAG [ReadDataByIdentifier__DID_] SEND [22,f1,90] EXPECT [62,f1,90,a1,b2] TIMEOUT [1000]")
 
 nested  = ("/nested.skr"
           ,"DIAG [ReadDataByIdentifier_3] SEND [22,F1,90] EXPECT [*] TIMEOUT [1400]")
@@ -66,18 +65,17 @@ cyclicCanMsgTest = ("/cyclicCanMsg.skr"
 
 
 assertPreProcess :: (FilePath, String) -> IO HU.Assertion
-assertPreProcess test = 
+assertPreProcess test =
   do let (file,expected) = test
 --     skript    <- readFile (scriptPath ++ file)
      processed <- preProcess (scriptPath ++ file)
 --     processed <- preProcess skript
      let res = case processed of
-                (Left  processed) -> False
-                (Right processed) -> processed == expected
+                (Left  _) -> False
+                (Right p) -> p == expected
      return $ HU.assert res
 
 
-
-preP test = preProcess (scriptPath ++ (fst test))
+preP test = preProcess (scriptPath ++ fst test)
 
 

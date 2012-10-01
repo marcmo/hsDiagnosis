@@ -151,7 +151,7 @@ showRelevant _ (CyclicCanMsg name canId dat cyc) = return $ Right $
   "STARTCYCLICCANMSG " ++ bracketed name ++
   " ID "               ++ bracketed canId ++
   " DATA "             ++ bracketedList dat  ++
-  " cyc "            ++ bracketed cyc
+  " CYCLE "            ++ bracketed cyc
 showRelevant parentFilePath (CallScript path nameValPairs) =
         prePro newFilePath nameValPairs
   where newFilePath = let dir = FP.dropFileName parentFilePath in

@@ -11,8 +11,6 @@ import qualified Test.HUnit as HU
 import Test.Framework (testGroup, Test)
 import Test.Framework.Providers.HUnit (testCase)
 import Text.Parsec.Error
-import Util.RecursiveContents
-import qualified Diagnoser.PreProcessor as PP
 
 scriptPath = "Tests/diagnoser/implemented"
 
@@ -34,7 +32,7 @@ diagnoserScripterTests = do
   groupNestedAssertion      <- assertionTest groupNestedResult       (scriptPath ++ "/groupNested.skr")
   groupNumberNameAssertion  <- assertionTest groupNumberNameResult   (scriptPath ++ "/groupNumberName.skr")
   waitSimpleAssertion       <- assertionTest waitSimpleResult        (scriptPath ++ "/waitSimple.skr")
-  useractionSimpleAssertion <- assertionTest useractionSimpleResult  (scriptPath ++ "/useractionSimple.skr")
+  -- useractionSimpleAssertion <- assertionTest useractionSimpleResult  (scriptPath ++ "/useractionSimple.skr")
   canmsgSimpleAssertion     <- assertionTest canmsgSimpleResult      (scriptPath ++ "/canmsgSimple.skr")
   canmsgCyclicAssertion     <- assertionTest canmsgCyclicResult      (scriptPath ++ "/canmsgCyclic.skr")
   waitExample       <- assertionTest allTrueResult              "Tests/diagnoser/Beispiele_WAIT/EXAMPLE_kwp2000_test_with_WAIT.skr"
@@ -70,86 +68,86 @@ diagnoserScripterTests = do
          ]
 
 type ParsedSkript    = Either ParseError DiagScript
-type SkriptAssertion = ParsedSkript -> HU.Assertion 
+type SkriptAssertion = ParsedSkript -> HU.Assertion
 
 testOrResult :: DiagScript -> Bool
-testOrResult (DiagScript 
-                       [ScriptTestCase ( 
-                         TestCase _ 
+testOrResult (DiagScript
+                       [ScriptTestCase (
+                         TestCase _
                             (DiagScriptMsg Nothing Nothing _)
-                            (ExpectedMsg Nothing Nothing (ExpectedPayload [_,_])) 
+                            (ExpectedMsg Nothing Nothing (ExpectedPayload [_,_]))
                             _ Nothing Nothing )]) = True
 testOrResult _ = False
 
 testCaseNoSTResult :: DiagScript -> Bool
-testCaseNoSTResult (DiagScript 
-                       [ScriptTestCase ( 
+testCaseNoSTResult (DiagScript
+                       [ScriptTestCase (
                          TestCase "11_ECU_RESET_POWERON"
                            (DiagScriptMsg Nothing Nothing [0x11,0x01])
-                           (ExpectedMsg Nothing Nothing _) 
+                           (ExpectedMsg Nothing Nothing _)
                            2000 Nothing Nothing )]) = True
 testCaseNoSTResult _ = False
 
 testCaseNoneResult :: DiagScript -> Bool
-testCaseNoneResult (DiagScript 
-                       [ScriptTestCase ( 
+testCaseNoneResult (DiagScript
+                       [ScriptTestCase (
                          TestCase "abc" _
-                           (ExpectedMsg _ _ NoMsg) 
+                           (ExpectedMsg _ _ NoMsg)
                            2000 _ _ )]) = True
 testCaseNoneResult _ = False
 
 testCaseEveryResult :: DiagScript -> Bool
-testCaseEveryResult (DiagScript 
-                      [ScriptTestCase ( 
-                         TestCase "abc" 
-                           (DiagScriptMsg _ _ [0x1,0x2,0x3]) 
-                           (ExpectedMsg _ _ EveryMsg)  
+testCaseEveryResult (DiagScript
+                      [ScriptTestCase (
+                         TestCase "abc"
+                           (DiagScriptMsg _ _ [0x1,0x2,0x3])
+                           (ExpectedMsg _ _ EveryMsg)
                            2000 _ _)]) = True
 testCaseEveryResult _ = False
 
 testCaseEveryOrNoneResult :: DiagScript -> Bool
-testCaseEveryOrNoneResult (DiagScript 
-                             [ScriptTestCase ( 
-                                TestCase "abc"                            
-                                  (DiagScriptMsg _ _ _) 
-                                  (ExpectedMsg _ _ EveryOrNoMsg)  
+testCaseEveryOrNoneResult (DiagScript
+                             [ScriptTestCase (
+                                TestCase "abc"
+                                  DiagScriptMsg {}
+                                  (ExpectedMsg _ _ EveryOrNoMsg)
                                   2000 _ _)]) = True
 testCaseEveryOrNoneResult _ = False
 
 testCaseQuestionmarkResult :: DiagScript -> Bool
-testCaseQuestionmarkResult (DiagScript 
-                             [ScriptTestCase ( 
-                               TestCase _ _ 
-                                (ExpectedMsg (Just 0xB0) (Just 0xA0) 
-                                                 (ExpectedPayload [[Match 0xaa,Questioned "??",Match 0xcc]]))  
+testCaseQuestionmarkResult (DiagScript
+                             [ScriptTestCase (
+                               TestCase _ _
+                                (ExpectedMsg (Just 0xB0) (Just 0xA0)
+                                                 (ExpectedPayload [[Match 0xaa,Questioned "??",Match 0xcc]]))
                                _ _ _)]) = True
 testCaseQuestionmarkResult _ = False
 
 testCaseQuestionHalfResult :: DiagScript -> Bool
-testCaseQuestionHalfResult (DiagScript 
-                             [ScriptTestCase ( 
-                               TestCase _ _ 
+testCaseQuestionHalfResult (DiagScript
+                             [ScriptTestCase (
+                               TestCase _ _
                                  (ExpectedMsg _ _ (ExpectedPayload [[Match 0xaa,Questioned "F?",Match 0xcc]]))
                                   _ _ _)]) = True
 testCaseQuestionHalfResult _ = False
 
 testCaseStarResult :: DiagScript -> Bool
-testCaseStarResult (DiagScript 
-                        [ScriptTestCase ( 
+testCaseStarResult (DiagScript
+                        [ScriptTestCase (
                           TestCase "abc" (DiagScriptMsg _ _ [0x1,0x2,0x3])
                             (ExpectedMsg _ _ (ExpectedPayload [[Match 0xaa, Star ,Match 0xcc]]))
                              2000 _ _)]) = True
 testCaseStarResult _ = False
 
 testCaseWildcardResult :: DiagScript -> Bool
-testCaseWildcardResult (DiagScript 
-                        [ScriptTestCase ( 
+testCaseWildcardResult (DiagScript
+                        [ScriptTestCase (
                           TestCase "abc" _ _ 2000 _ _)]) = True
 testCaseWildcardResult _ = False
 
 testCaseExplicitResult :: DiagScript -> Bool
-testCaseExplicitResult (DiagScript 
-                        [ScriptTestCase ( 
+testCaseExplicitResult (DiagScript
+                        [ScriptTestCase (
                          TestCase "abc"
                           (DiagScriptMsg (Just 0xA0) (Just 0xB0) [0x1,0x2,0x3])
                           (ExpectedMsg (Just 0xB0) (Just 0xA0) (ExpectedPayload [[Match 0xaa,Match 0xbb,Match 0xcc]]))
@@ -157,8 +155,8 @@ testCaseExplicitResult (DiagScript
 testCaseExplicitResult _         = False
 
 testOneHexResult :: DiagScript -> Bool
-testOneHexResult (DiagScript 
-                   [ScriptTestCase ( 
+testOneHexResult (DiagScript
+                   [ScriptTestCase (
                      TestCase _ (DiagScriptMsg (Just 0xf0) (Just 0xf2) [0x31,0x0])
                                    (ExpectedMsg  (Just 0xf2) (Just 0xf0) (ExpectedPayload [[Match 1,Match 2, Match 3]]))
                                  _ _ _)]) = True
@@ -172,54 +170,54 @@ canmsgSimpleResult :: DiagScript -> Bool
 canmsgSimpleResult (DiagScript [CanMsg "CAN_1" 0x6F1 [0x11,0x22,0x33,0x44]]) = True
 canmsgSimpleResult _ = False
 
-useractionSimpleResult :: DiagScript -> Bool
-useractionSimpleResult (DiagScript [Useraction "Dieser Text wird als MsgBox angezeigt!"]) = True
-useractionSimpleResult _ = False
+-- useractionSimpleResult :: DiagScript -> Bool
+-- useractionSimpleResult (DiagScript [Useraction "Dieser Text wird als MsgBox angezeigt!"]) = True
+-- useractionSimpleResult _ = False
 
 waitSimpleResult :: DiagScript -> Bool
 waitSimpleResult (DiagScript [Wait 1000]) = True
-waitSimpleResult  _ = False 
+waitSimpleResult  _ = False
 
 loopNestedResult :: DiagScript -> Bool
-loopNestedResult (DiagScript 
-                   [Loop "loopA" 10 
+loopNestedResult (DiagScript
+                   [Loop "loopA" 10
                      [ScriptTestCase _,
-                       Loop "loopB" 10 
+                       Loop "loopB" 10
                          [ScriptTestCase _]]]) = True
-loopNestedResult  _ = False 
+loopNestedResult  _ = False
 
 groupNumberNameResult :: DiagScript -> Bool
 groupNumberNameResult (DiagScript [Group "1" _ ]) = True
-groupNumberNameResult _ = False 
+groupNumberNameResult _ = False
 
 groupNestedResult :: DiagScript -> Bool
-groupNestedResult (DiagScript 
-                        [Group "g" 
-                          [ScriptTestCase _, 
-                            Group "h" 
+groupNestedResult (DiagScript
+                        [Group "g"
+                          [ScriptTestCase _,
+                            Group "h"
                              [ScriptTestCase _]]]) = True
-groupNestedResult  _ = False 
+groupNestedResult  _ = False
 
 testLoopExplicit ::  SkriptAssertion
 testLoopExplicit parseResult =
   let diagMsg       = DiagScriptMsg (Just 0xA0) (Just 0xB0) [0x1,0x2,0x3]
       diagMsgExpect = ExpectedMsg  (Just 0xB0) (Just 0xA0) (ExpectedPayload [[Match 0xaa, Match 0xbb, Match 0xcc]])
-      expected      = DiagScript {
+      expect      = DiagScript {
         scriptElements = [
           Loop "loopA" 10 [
             ScriptTestCase (
               TestCase "abc" diagMsg diagMsgExpect 2000 (Just 0xA0) (Just 0xB0)) ]]}
       mkTest = either
-          (\error -> HU.assertBool ("was not parsed correctly:" ++ show error) False)
-          (\x -> expected HU.@=? x) in
+          (\e -> HU.assertBool ("was not parsed correctly:" ++ show e) False)
+          (\x -> expect HU.@=? x) in
   mkTest parseResult
 
-generalAssertion :: ParsedSkript -> (DiagScript -> Bool) -> HU.Assertion 
+generalAssertion :: ParsedSkript -> (DiagScript -> Bool) -> HU.Assertion
 generalAssertion parseResult checkResult =
   let mkTest = either
-         (\error -> HU.assertBool ("was not parsed correctly:" ++ show error) False)                       
+         (\e -> HU.assertBool ("was not parsed correctly:" ++ show e) False)
          (HU.assertBool "parsed correctly:" . checkResult)   in
-  mkTest parseResult 
+  mkTest parseResult
 
 assertionTest testAssertion file  = do
   f <-  readFile file
@@ -227,36 +225,36 @@ assertionTest testAssertion file  = do
   -- let f = case scr of
   --          (Right r) -> r
   --          (Left  l) -> ""
-  let s = SP.parseScript f 
-  return $ generalAssertion s testAssertion                  
+  let s = SP.parseScript f
+  return $ generalAssertion s testAssertion
 
 generalTest :: SkriptAssertion -> FilePath -> IO HU.Assertion
 generalTest testAssertion file  = do
   f <-  readFile file
-  let s = SP.parseScript f 
+  let s = SP.parseScript f
   return $ testAssertion s
 
 allTrueResult :: DiagScript -> Bool
 allTrueResult _ = True
 
-allSkriptFiles = getRecursiveContents "Tests/diagnoser/"
- 
+-- allSkriptFiles = getRecursiveContents "Tests/diagnoser/"
+
 -- Function for quickly comparing input from .skr file and parsed Output
 devTest :: String -> IO ()
 devTest f = do
   s <- readFile f
-  let p = SP.parseScript s  
-  putStrLn s 
-  print p 
+  let p = SP.parseScript s
+  putStrLn s
+  print p
 
-devtests = allSkriptFiles >>= mapM_ devTest
+-- devtests = allSkriptFiles >>= mapM_ devTest
 
-devTests2 = allSkriptFiles >>= mapM_ dTest
-      where dTest f = do  s <- readFile f
-                          let p = SP.parseScript s  
-                          putStrLn "\n\n\n"
-                          putStrLn "---------------------------------------------------------------------------------"
-                          putStrLn f
-                          putStrLn s 
-                          print p 
+-- devTests2 = allSkriptFiles >>= mapM_ dTest
+--       where dTest f = do  s <- readFile f
+--                           let p = SP.parseScript s
+--                           putStrLn "\n\n\n"
+--                           putStrLn "---------------------------------------------------------------------------------"
+--                           putStrLn f
+--                           putStrLn s
+--                           print p
 

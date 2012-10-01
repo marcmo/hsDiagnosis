@@ -1,5 +1,5 @@
 language: haskell
+notifications:
+  email: true
 script:
-  - bundle exec rake test
-before_script:
-  - bundle
+  - cabal configure --enable-tests && cabal build && cabal test
