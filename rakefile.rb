@@ -90,6 +90,13 @@ task :cabalTest do
   sh "cabal test"
 end
 
+desc "prepare cabal-dev build"
+task :dev do
+  sh "cabal-dev clean"
+  sh "cabal-dev configure"
+  sh "cabal-dev build"
+end
+
 def stripExec (x)
   if OS.unix?
     sh "strip #{x}"

@@ -125,7 +125,7 @@ listenForResponse m =
         log ("wait for data with timeout:" ++ show timeout ++ " ms\n")
         dataAvailable <- waitForData timeout
         log "\n"
-        if not dataAvailable then io (print "no message available...") >> return mempty
+        if not dataAvailable then io (print "no message received...") >> return mempty
           else do
             answereBytesRead <- io $ hGetBufNonBlocking h buf receiveBufSize
             res2 <- io $ S.packCStringLen (buf,answereBytesRead)

@@ -12,7 +12,7 @@ import Control.Exception (IOException, handle)
 
 initSerialPort :: IO SerialPort
 initSerialPort = do
-    defaultSerialPort <- liftIO $ valueToString $ lookupValue Config.defaultConfig "serialPort"
+    defaultSerialPort <- liftIO $ valueToString $ Config.defaultConfig >>= lookupValue "serialPort"
     let defaultSerialPath = fromMaybe "/dev/ttyUSB0" defaultSerialPort
     serialHandler <- handle ex $ do
                          serial <- openSerial defaultSerialPath defaultSerialSettings
@@ -28,6 +28,7 @@ serialSocketLoop serial sink = do
 
 serialSocket ::  WS.Request -> WS.WebSockets WS.Hybi00 ()
 serialSocket rq = do
+    liftIO $ print "serialSocket.........."
     serial <- liftIO initSerialPort
     WS.acceptRequest rq
     sink <- WS.getSink

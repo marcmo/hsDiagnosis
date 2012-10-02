@@ -1,8 +1,9 @@
 module Script.LoggingFramework
 where
 import Com.DiagClient
-import DiagnosticConfig
+import DiagnosticConfig(conf)
 import Util.Encoding
+import Control.Monad(void)
 
 data LoggingInstruction = DISABLEALL
                         | ENABLEALL
@@ -79,18 +80,18 @@ data LogLevel = NOLOGGING
 setLevel :: UsedComponent -> LogLevel -> IO [DiagnosisMessage]
 setLevel comp level = sendData conf [0xbf,0x12,0x04,toWord SETLEVEL,toWord comp,toWord level]
 
-disable = sendData conf [0xbf,0x12,0x04,toWord DISABLEALL] >> return ()
+disable = void $ sendData conf [0xbf,0x12,0x04,toWord DISABLEALL]
 
 enable = sendData conf [0xbf,0x12,0x04,toWord ENABLEALL, toWord DEBUG] >>= print
 
 showMapping = showMappingWithConf conf
 showMappingWithConf c = sendData c [0xbf,0x12,0x04,toWord DISPLAYSETTINGS] >>=
-                \xs -> if length xs == 0 then (print "no valid response")
+                \xs -> if null xs then print "no valid response"
                         else mapM_ (putStrLn . unlines . interpreteMapping . diagPayload) xs
 
 interpreteMapping ::  [Word8] -> [String]
-interpreteMapping bs = 
-  let mapping = zip [0..] (drop 3 bs) 
+interpreteMapping bs =
+  let mapping = zip [0..] (drop 3 bs)
       showLevel = show . (toEnum :: Int -> LogLevel) . word8ToInt
       showComponent = show . (toEnum :: Int -> UsedComponent) . word8ToInt
       display (pos,lev) = showComponent pos ++ " -> " ++ showLevel lev in

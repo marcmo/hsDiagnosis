@@ -46,47 +46,35 @@ configGroupFromFile file groupName = do c <- configFromFile file
                                         return $ C.subconfig (T.pack groupName) c
 
 --------------------------------------------------------------------------------
-
 hexIt :: String -> Maybe Word8
 hexIt s = case readHex s of
             [(h,[])]  -> Just h
             _         -> Nothing
 
-
-lookupValue :: IO CT.Config -> String -> IO (Maybe CT.Value)
-lookupValue conf name = do c <- conf
-                           C.lookup c (T.pack name)
-
-valueToInt :: IO (Maybe CT.Value) -> IO (Maybe Int)
-valueToInt v = do o <- v;  return $ o  >>= CT.convert
+lookupValue :: String -> CT.Config -> IO (Maybe CT.Value)
+lookupValue name conf = C.lookup conf (T.pack name)
 
 valueToString :: IO (Maybe CT.Value) -> IO (Maybe String)
-valueToString v = do o <- v;  return $  o >>=  CT.convert
+valueToString = fmap $ (=<<) CT.convert
 
-valueToBool :: IO (Maybe CT.Value) -> IO (Maybe Bool)
-valueToBool v = do o <- v;  return $  o >>=  CT.convert
+lookup_ s c = fmap (maybe Nothing CT.convert) (lookupValue s c)
+lookupIp      = lookup_ "ip"
+lookupPort    = lookup_ "port"
+lookupTarget  = lookup_ "target"
+lookupSource  = lookup_ "source"
+lookupVerbose = lookup_ "verbose"
+lookupTimeout = lookup_ "timeout"
 
-valueToHex :: IO (Maybe CT.Value) -> IO (Maybe Word8)
-valueToHex v = do o <- v; return $  o >>=  CT.convert  >>= hexIt
-
-
-lookupIp      conf = valueToString $ lookupValue conf "ip"
-lookupPort    conf = valueToInt    $ lookupValue conf "port"
-lookupTarget  conf = valueToHex    $ lookupValue conf "target"
-lookupSource  conf = valueToHex    $ lookupValue conf "source"
-lookupVerbose conf = valueToBool   $ lookupValue conf "verbose"
-lookupTimeout conf = valueToInt    $ lookupValue conf "timeout"
-
-defaultIp     = lookupIp      defaultConfig
-defaultPort   = lookupPort    defaultConfig
-defaultTarget = lookupTarget  defaultConfig
-defaultSource = lookupSource  defaultConfig
-defaultVerbose= lookupVerbose defaultConfig
-defaultTimeout= lookupTimeout defaultConfig
+defaultIp     = defaultConfig >>= lookupIp
+defaultPort   = defaultConfig >>= lookupPort
+defaultTarget = defaultConfig >>= lookupTarget
+defaultSource = defaultConfig >>= lookupSource
+defaultVerbose= defaultConfig >>= lookupVerbose
+defaultTimeout= defaultConfig >>= lookupTimeout
 data DiagConfigIn = DiagConfigIn (Maybe String) (Maybe Int) (Maybe Word8) (Maybe Word8) (Maybe Bool) (Maybe Int)
   deriving (Show)
 
-diagConfigIn :: IO CT.Config -> IO DiagConfigIn
+diagConfigIn :: CT.Config -> IO DiagConfigIn
 diagConfigIn c =
   DiagConfigIn <$> lookupIp      c
                <*> lookupPort    c
@@ -96,8 +84,8 @@ diagConfigIn c =
                <*> lookupTimeout c
 
 diagConfigInFromFile :: FilePath -> IO DiagConfigIn
-diagConfigInFromFile      f    = diagConfigIn (configFromFile f)
-diagConfigInGroupFromFile f g  = diagConfigIn (configGroupFromFile f g)
+diagConfigInFromFile      f    = configFromFile f >>= diagConfigIn
+diagConfigInGroupFromFile f g  = configGroupFromFile f g >>= diagConfigIn
 
 mergeDiagConfigIns :: DiagConfigIn -> DiagConfigIn -> DiagConfigIn
 mergeDiagConfigIns (DiagConfigIn ip1 host1 source1 target1 verbose1 timeout1)

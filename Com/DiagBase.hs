@@ -30,7 +30,7 @@ type Net = ReaderT DiagConnection IO
 type Callback = Maybe DiagnosisMessage -> IO ()
 
 printNegativeResponses xs =
-  forM_ xs $ \x -> 
+  forM_ xs $ \x ->
     when (isNegativeResponse x) $ do
       let (DiagnosisMessage _ _ (_:_:err:_)) = x
       print err

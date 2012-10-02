@@ -8,3 +8,4 @@ simpleLoader
 diagtool
 bin
 dist
+cabal-dev

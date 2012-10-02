@@ -24,7 +24,7 @@ import Prelude hiding (catch,log)
 timeInSec :: IO Double
 timeInSec = do
   t1 <- getCPUTime
-  return $ (fromIntegral (t1) * 1e-6)
+  return $ fromIntegral t1 * 1e-6
 
 test = timeItT (print "hi")
 
@@ -42,7 +42,7 @@ type Callback = Maybe DiagnosisMessage -> IO ()
 type Net = ReaderT DiagConnection IO
 
 sendWithCallback :: Int -> DiagConfig -> [Word8] -> Callback -> IO()
-sendWithCallback listenTime c xs cb = sendMessageWithCallback listenTime c hsfzMsg cb
+sendWithCallback listenTime c xs = sendMessageWithCallback listenTime c hsfzMsg
     where diagMsg = DiagnosisMessage (source c) (target c) xs
           hsfzMsg = diag2hsfz diagMsg DataBit
 
@@ -77,7 +77,7 @@ diagConnect c = notify $ do
       | otherwise = bracket_ (return ()) (return ())
 
 run :: Int -> DiagConfig -> Callback -> HSFZMessage -> Net ()
-run listenTime c cb msg = do 
+run listenTime c cb msg = do
     ReaderT $ \r -> forkIO $ runReaderT (asks diagHandle >>= listen listenTime c cb) r
     pushOutMessage msg
 
@@ -90,13 +90,11 @@ pushOutMessage msg = do
 
 listen :: Int -> DiagConfig -> Callback -> Handle -> Net ()
 listen listenTime c cb h = do -- forever $ do
-    startTime <- io $ getCPUTime
-    let repeatTimes = round $ (fromIntegral listenTime*1000)/(fromIntegral diagTimeout)
+    startTime <- io getCPUTime
+    let repeatTimes = round $ (fromIntegral listenTime*1000)/fromIntegral diagTimeout
     io $ print ("repeating n times: " ++ show repeatTimes)
-    sequence_ $ replicate repeatTimes (receiveResponse cb)
-  where
-    forever a = a >> forever a
- 
+    replicateM_ repeatTimes (receiveResponse cb)
+
 receiveResponse :: Callback -> Net ()
 receiveResponse cb = do
     io $ print "calling receiveResponse .............................."
@@ -104,33 +102,33 @@ receiveResponse cb = do
     dataResp <- receiveDataMsg buf
     io $ free buf
     if responsePending dataResp
-      then (log $ "...received response pending") >> receiveResponse cb
+      then log "...received response pending" >> receiveResponse cb
       else io $ cb $ hsfz2diag <$> dataResp
 
 receiveDataMsg ::  Ptr CChar -> Net (Maybe HSFZMessage)
 receiveDataMsg buf = do
-    msg <- receiveMsg buf 
+    msg <- receiveMsg buf
     log $ "was " ++ show msg
     maybe (return ()) (\m -> log $ "<-- " ++ show m) msg
     maybe (return Nothing)
-      (\m->if isData m then (log "was data!") >> return msg else (log "was no data packet") >> receiveDataMsg buf) msg
+      (\m->if isData m then log "was data!" >> return msg else log "was no data packet" >> receiveDataMsg buf) msg
 
 receiveMsg ::  Ptr CChar -> Net (Maybe HSFZMessage)
 receiveMsg buf = do
     h <- asks diagHandle
     dataAvailable <- io $ waitForData diagTimeout h
-    if not dataAvailable then (io $ print "no message available...") >> return Nothing
+    if not dataAvailable then io (print "no message available...") >> return Nothing
       else do
         answereBytesRead <- io $ hGetBufNonBlocking h buf receiveBufSize
         res2 <- io $ peekCStringLen (buf,answereBytesRead)
-        log $ "received over the wire: " ++ (showBinString res2)
+        log $ "received over the wire: " ++ showBinString res2
         return $ bytes2msg res2
 
-waitForData ::  Int -> Handle -> IO (Bool)
+waitForData ::  Int -> Handle -> IO Bool
 waitForData waitTime_ms h = do
   putStr "."
   inputAvailable <- hWaitForInput h pollingMs
-  if inputAvailable then return True 
+  if inputAvailable then return True
     else if waitTime_ms > 0
           then waitForData (waitTime_ms - pollingMs) h
           else return False
@@ -144,7 +142,7 @@ log s = do
     when v $ io $ print s
 
 responsePending ::  Maybe HSFZMessage -> Bool
-responsePending = 
+responsePending =
   maybe False (\m->
     let p = diagPayload (hsfz2diag m) in
-      length p == 3 && p!!0 == 0x7f && p!!2 == 0x78)
+      length p == 3 && head p == 0x7f && p!!2 == 0x78)

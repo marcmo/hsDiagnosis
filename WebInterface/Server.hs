@@ -1,9 +1,5 @@
 {-# LANGUAGE OverloadedStrings #-}
 
-module WebInterface.Server where
-
-import System.Hardware.Serialport
-
 import WebInterface.SerialPort (serialSocket)
 import Com.DiagClient (DiagConfig(MkDiagConfig), DiagnosisMessage, Word8, diagPayload, sendData)
 import Config
@@ -13,13 +9,11 @@ import Snap.Util.FileServe
 import Snap.Http.Server
 import Network.WebSockets.Snap (runWebSocketsSnap)
 
-import Control.Monad
-import Control.Concurrent
 import Control.Applicative ((<|>))
 import Control.Monad.IO.Class (liftIO)
-import Data.Text as T  (Text, split, strip, pack, unpack)
+import Data.Text as T  (split, strip, pack, unpack)
 import Data.Maybe (fromJust)
-import Data.Map (Map, lookup)
+import Data.Map (lookup)
 import Data.List (intercalate)
 import Data.Char (toUpper)
 import qualified Data.ByteString.UTF8 as BS (ByteString, toString, fromString)
@@ -28,11 +22,10 @@ import Numeric( showHex)
 
 configHandler :: Snap ()
 configHandler = do
-  conf <- liftIO Config.defaultConfig
   ip   <- liftIO Config.defaultIp
   src  <- liftIO Config.defaultSource
   tgt  <- liftIO Config.defaultTarget
-  sPath <- liftIO $ valueToString $ lookupValue Config.defaultConfig "serialPort"
+  sPath <- liftIO $ valueToString $ Config.defaultConfig >>= lookupValue "serialPort"
   liftIO $ putStrLn $ showHex (fromJust src) ""
   writeBS $ BS.fromString $
   -- JSON:
