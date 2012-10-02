@@ -1,0 +1,79 @@
+html {
+    font-family: sans-serif;
+    background-color: #55BBFF;
+    font-size: 16px;
+}
+
+
+h1 {
+    text-align: center;
+    font-size: 25px;
+    padding: 3px 3px 3px 3px;
+    border-bottom: 1px solid black;
+}
+
+h2 {
+    color: #fff;
+
+    text-align: center;
+    display: block;
+    font-size: 18px;
+}
+
+form#message-form{
+    width: 600px;
+    margin: 0px auto 0px auto;
+    padding: 0px;
+
+    background-color: #66CCFF;
+}
+
+
+
+
+div#messages {
+    width: 600px;
+    margin: 0px auto 0px auto;
+    padding: 0px;
+    background-color: #fff;
+    height: 360px;
+    overflow: auto;
+}
+
+div#serial-out {
+    width: 600px;
+    margin: 0px auto 0px auto;
+    padding: 0px;
+    background-color: #fff;
+    height: 460px;
+    overflow: auto;
+}
+
+div#serial-path {
+    width: 600px;
+    margin: 0px auto 0px auto;
+    padding: 0px;
+    background-color: #66CCFF;
+}
+
+
+div#messages p {
+    margin: 0px;
+    padding: 0px;
+}
+
+
+div#messages p {
+    margin: 0px;
+    padding: 0px;
+}
+
+div#serial-out p {
+    margin: 0px;
+    padding: 0px;
+}
+
+hr {
+    background: blue; 
+    height: 1px;
+}

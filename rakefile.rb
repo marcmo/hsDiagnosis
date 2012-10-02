@@ -82,6 +82,14 @@ task :test do
   sh 'runhaskell Tests/testMain.hs'
 end
 
+desc "cabal test"
+task :cabalTest do
+  sh "cabal clean"
+  sh "cabal configure --enable-tests"
+  sh "cabal build"
+  sh "cabal test"
+end
+
 def stripExec (x)
   if OS.unix?
     sh "strip #{x}"

@@ -1,13 +1,22 @@
 {-# LANGUAGE DeriveDataTypeable #-}
 module Config
     (
-      defaultConfigFile,
-      diagConfigInFromFile,
-      mergeDiagConfigIns,
-      DiagConfigIn(..),
-      hexIt,
-      inToDiagConfig,
-      diagConfigInGroupFromFile
+       defaultConfigFile
+      ,defaultConfig
+      ,diagConfigInFromFile
+      ,mergeDiagConfigIns
+      ,DiagConfigIn(..)
+      ,hexIt
+      ,inToDiagConfig
+      ,diagConfigInGroupFromFile
+      ,valueToString
+      ,lookupValue
+      ,defaultIp
+      ,defaultSource
+      ,defaultTarget
+      ,defaultPort
+      ,defaultVerbose
+      ,defaultTimeout
     )
 where
 
@@ -20,7 +29,8 @@ import qualified Data.Text as T
 import Numeric
 import Control.Applicative
 
-
+defaultConfig :: IO CT.Config
+defaultConfig = configFromFile defaultConfigFile
 defaultConfigFile = "config.cfg"
 -- maybe better(?):
 -- defaultConfigFile = do home <- System.Directory.getUserDocumentsDirectory
@@ -67,6 +77,12 @@ lookupSource  conf = valueToHex    $ lookupValue conf "source"
 lookupVerbose conf = valueToBool   $ lookupValue conf "verbose"
 lookupTimeout conf = valueToInt    $ lookupValue conf "timeout"
 
+defaultIp     = lookupIp      defaultConfig
+defaultPort   = lookupPort    defaultConfig
+defaultTarget = lookupTarget  defaultConfig
+defaultSource = lookupSource  defaultConfig
+defaultVerbose= lookupVerbose defaultConfig
+defaultTimeout= lookupTimeout defaultConfig
 data DiagConfigIn = DiagConfigIn (Maybe String) (Maybe Int) (Maybe Word8) (Maybe Word8) (Maybe Bool) (Maybe Int)
   deriving (Show)
 
