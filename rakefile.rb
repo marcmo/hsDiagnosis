@@ -90,8 +90,11 @@ task :cabalTest do
   sh "cabal test"
 end
 
+task :deps do
+  sh "cabal-dev install --only-dependencies"
+end
 desc "prepare cabal-dev build"
-task :dev do
+task :dev => :deps do
   sh "cabal-dev clean"
   sh "cabal-dev configure"
   sh "cabal-dev build"
