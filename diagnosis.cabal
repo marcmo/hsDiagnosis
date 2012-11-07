@@ -21,7 +21,27 @@ source-repository head
   location:         https://github.com/marcmo/hsDiagnosis
 Executable luaexecuter
   Main-is:          LuaMain.hs
-  Build-Depends:    bytestring,parsec>=3.0,base>=4 && < 5,mtl,network,directory, time, split, deepseq, cereal, regex-compat, hslua, HUnit, test-framework-hunit,test-framework, cmdargs, filepath, containers, configurator, text, test-framework-quickcheck2
+  Build-Depends:    bytestring,
+                    parsec>=3.0,
+                    base>=4 && < 5,
+                    mtl,
+                    network,
+                    directory,
+                    time,
+                    split,
+                    deepseq,
+                    cereal,
+                    regex-compat,
+                    hslua,
+                    HUnit,
+                    test-framework-hunit,
+                    test-framework,
+                    cmdargs,
+                    filepath,
+                    containers,
+                    configurator,
+                    text,
+                    test-framework-quickcheck2
   -- GHC-Options:        -threaded
 
 Executable diagexecuter
@@ -46,10 +66,10 @@ Executable webdiag
                   serialport
 
   if impl(ghc >= 6.12.0)
-    ghc-options: -threaded -Wall -fwarn-tabs -funbox-strict-fields -O2
+    ghc-options: -Wall -fwarn-tabs -funbox-strict-fields -O2
                  -fno-warn-unused-do-bind
   else
-    ghc-options: -threaded -Wall -fwarn-tabs -funbox-strict-fields -O2
+    ghc-options: -Wall -fwarn-tabs -funbox-strict-fields -O2
 
 Test-Suite tests
     type:           exitcode-stdio-1.0

@@ -74,7 +74,8 @@ sendMessage c async msg = bracket diagConnect disconnect loop
 
 run :: Bool -> HSFZMessage -> Net MessageStream
 run async msg =
-    if async then pushOutMessage msg >> return mempty
+    if async
+      then pushOutMessage msg >> return mempty
       else do
         m <- io newEmptyMVar
         ReaderT $ \r ->

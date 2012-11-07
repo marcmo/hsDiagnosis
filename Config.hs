@@ -83,6 +83,10 @@ diagConfigIn c =
                <*> lookupVerbose c
                <*> lookupTimeout c
 
+mkConf :: Word8 -> String -> DiagConfig
+mkConf trg ip = MkDiagConfig ip 6801 0xf4 trg debug_on standardDiagTimeout
+zgwConfig = mkConfig 
+
 diagConfigInFromFile :: FilePath -> IO DiagConfigIn
 diagConfigInFromFile      f    = configFromFile f >>= diagConfigIn
 diagConfigInGroupFromFile f g  = configGroupFromFile f g >>= diagConfigIn

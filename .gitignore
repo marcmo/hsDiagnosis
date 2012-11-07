@@ -9,3 +9,4 @@ diagtool
 bin
 dist
 cabal-dev
+log

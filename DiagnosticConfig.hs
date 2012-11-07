@@ -5,7 +5,7 @@ module DiagnosticConfig
       broadcastConf,
       femConfig,
       zgwConfig,
-      msgTunnelConf,
+      messageTunnel,
       standardDiagTimeout,
       currentIp,
       msgTunnelIp,
@@ -27,11 +27,10 @@ msgTunnelIp = "10.40.39.48"
 
 fem = 0x40
 zgw = 0x10
-messageTunnel = 0x10
+messageTunnel = 0x10 :: Word8
 
 femConfig = mkConf fem
 zgwConfig = mkConf zgw
-msgTunnelConf = mkConf messageTunnel msgTunnelIp
 
 standardDiagTimeout = 5000 :: Int -- ms
 mkConf :: Word8 -> String -> DiagConfig
@@ -47,3 +46,4 @@ getIp = do
 
 currentIp = let (MkDiagConfig ip _ _ _ _ _) = conf in
   ip
+
