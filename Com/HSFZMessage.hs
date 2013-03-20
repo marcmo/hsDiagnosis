@@ -20,7 +20,7 @@ data ControlBit = AckBit | DataBit | GetVehicleIdentBit deriving (Show,Eq)
 control2Int DataBit = 0x1 :: Word8
 control2Int AckBit = 0x2 :: Word8
 control2Int GetVehicleIdentBit = 0x11 :: Word8
-int2control cbit 
+int2control cbit
   | cbit == 0x1 = DataBit
   | cbit == 0x2 = AckBit
   | cbit == 0x11 = GetVehicleIdentBit

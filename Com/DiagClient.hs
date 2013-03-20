@@ -21,7 +21,7 @@ import Com.HSFZMessage
 import Com.DiagBase
 import Network(PortID(PortNumber),connectTo)
 import System.IO hiding (hPutStrLn,hPutStr)
-import Data.ByteString.Char8 hiding (putStrLn,putStr,length,head,tail,filter)
+import Data.ByteString.Char8 hiding (putStrLn,putStr,length,head,tail,filter,any)
 import qualified Data.ByteString as S
 import Control.Concurrent(putMVar,MVar,forkIO,newEmptyMVar,takeMVar,yield)
 import Foreign(Ptr,Word8,free,mallocBytes)
@@ -44,7 +44,7 @@ sendData c xs = do
 sendDataAsync ::  DiagConfig -> [Word8] -> IO ()
 sendDataAsync c xs = do
   print $ "send async to " ++ host c
-  sendDiagMsg c True $ DiagnosisMessage (source c) (target c) xs
+  _ <- sendDiagMsg c True $ DiagnosisMessage (source c) (target c) xs
   return ()
 
 sendDataTo :: DiagConfig -> [Word8] -> Word8 -> Word8 -> IO [DiagnosisMessage]
@@ -78,8 +78,8 @@ run async msg =
       then pushOutMessage msg >> return mempty
       else do
         m <- io newEmptyMVar
-        ReaderT $ \r ->
-          forkIO $ catch
+        _ <- ReaderT $ \r ->
+              forkIO $ catch
                     (runReaderT (listenForResponse m) r)
                     (\(e :: HsfzException) -> (void (print e >> putMVar m mempty)))
         -- io $ putStrLn "hickup"
@@ -115,7 +115,7 @@ listenForResponse m =
         if mempty == stream
           then log ("<-- " ++ show stream) >> return stream
           else
-            if length (filter isData xs) > 0
+            if any isData xs
               then log "was data!" >> return stream
               else log "was no data packet" >> receiveDataMsg buf
 
