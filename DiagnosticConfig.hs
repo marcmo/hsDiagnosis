@@ -17,12 +17,12 @@ where
 import Com.DiagClient
 import Data.IORef
 
-debug_on = False
+debug_on = True
 
-conf = femConfig ip_A
+conf = zgwConfig ip_A
 broadcastConf = femConfig "255.255.255.255"
 
-ip_A = "192.168.0.85"
+ip_A = "172.31.95.242"
 msgTunnelIp = "10.40.39.48"
 
 fem = 0x40

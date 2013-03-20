@@ -90,6 +90,10 @@ task :cabalTest do
   sh "cabal test"
 end
 
+desc 'install all cabal dependencies'
+task :all_deps do
+  sh "sudo cabal install --only-dependencies"
+end
 task :deps do
   sh "cabal-dev install --only-dependencies"
 end

@@ -18,11 +18,14 @@ import Data.List (intercalate)
 import Data.Char (toUpper)
 import qualified Data.ByteString.UTF8 as BS (ByteString, toString, fromString)
 import Numeric( showHex)
+import Util.Encoding
+-- import DiagnosticConfig
 
 
 configHandler :: Snap ()
 configHandler = do
   ip   <- liftIO Config.defaultIp
+  liftIO $ print ("using ip: " ++ show ip)
   src  <- liftIO Config.defaultSource
   tgt  <- liftIO Config.defaultTarget
   sPath <- liftIO $ valueToString $ Config.defaultConfig >>= lookupValue "serialPort"
@@ -35,13 +38,33 @@ configHandler = do
       "\"serialPath\" : \"" ++ fromJust sPath  ++ "\"}"
 
 
+sendZgw d c = printData d >> sendData c d
+showMsg = mapM_ (putStrLn . showAsHexString . diagPayload)
+extendedSession = sendZgw [0x10, 0x3]
+printData = putStrLn . showAsHexString
+showPayload = mapM_ (printData . diagPayload)
+signatureLength = 192
+certificateFile = "../test.der"
+securityAccessRequestSeed = 0x3
+securityAccessSendKey = 0x4
+
+
+createSignature _ = [0..signatureLength-1]
+
+checkValidCertificates c = sendZgw  [0xBF,0xFF,0xD5] c >>= showPayload
 diagMsgHandler :: Snap ()
 diagMsgHandler = do
+  let c =  MkDiagConfig "192.168.0.85" 6801 0xf4 0x10 True 5000
+  liftIO $ checkValidCertificates c
   params <- getPostParams
   let [ip, src, tgt, msg]  = map (lookupParam params) ["ip", "src", "tgt", "msg"]
-      conf = MkDiagConfig ip 6801 (fromJust $ hexIt src) (fromJust $ hexIt tgt) False 5000
-  response  <- liftIO $ sendData conf (msgToWord8 msg)
+      conf = MkDiagConfig ip 6801 (fromJust $ hexIt src) (fromJust $ hexIt tgt) True 5000
+  liftIO $ print ("using conf: " ++ show conf)
+  let d = [0x10, 0x3]
+  response  <- liftIO $ sendData conf d
   writeBS $  formatResponse response
+  -- response  <- liftIO $ sendData conf (msgToWord8 msg)
+  -- writeBS $  formatResponse response
 
   where
     lookupParam :: Params -> BS.ByteString -> String
@@ -69,7 +92,8 @@ site =
 
 
 main :: IO ()
-main = quickHttpServe site
+main = do
+    quickHttpServe site
 
 
 
