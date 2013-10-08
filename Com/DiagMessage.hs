@@ -13,7 +13,7 @@ data DiagnosisMessage = DiagnosisMessage {
 
 } deriving (Eq)
 instance Show DiagnosisMessage where
-  show (DiagnosisMessage s t xs)  = '[':showAsHex s ++ "][" ++ showAsHex t ++ "]"
+  show (DiagnosisMessage s t xs)  = "<src:" ++ showAsHex s ++ "><tgt:" ++ showAsHex t ++ ">"
       ++ showAsHexString xs
 
 diagMsg2bytes ::  DiagnosisMessage -> [Word8]

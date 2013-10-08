@@ -6,6 +6,7 @@ import qualified Com.DiagClient as DC (DiagConfig(..))
 import Network.Socket
 import Diagnoser.DiagScriptTester(runTestScript)
 import Config
+import System.IO.Unsafe(unsafePerformIO)
 import qualified Data.List as DL (intercalate)
 
 -- if a better help message and improved flags are required we better switch from CmdArgs to System.Console.GetOpt
@@ -22,9 +23,12 @@ data DiagExecuter = DiagExecuter {
 } deriving (Show, Data, Typeable)
 
 
+configFile ::  String
+configFile = unsafePerformIO defaultConfigFile
+
 diagExecuter = DiagExecuter {
                     script = def &= args,
-                    config = defaultConfigFile &= typFile &= help ("configuration file, default points to \"" ++ defaultConfigFile ++ "\""),
+                    config = configFile &= typFile &= help ("configuration file, default points to \"" ++ configFile ++ "\""),
                     ip     = def              &= help "ip address of ecu", -- what is an ecu
                     port   = def              &= help "ip address port",
                     source = def &= typ "Hex" &= help "default source, as hex e.g. f4",

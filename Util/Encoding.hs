@@ -1,5 +1,4 @@
 module Util.Encoding
-
 where
 
 import Data.Char
@@ -14,7 +13,7 @@ int2Word8 x = fromIntegral x :: Word8
 word8ToInt x = fromIntegral x :: Int
 
 encodeInt :: (Integral a, Bits a) => a -> Int -> [Word8]
-encodeInt n width = 
+encodeInt n width =
             [int2Word8 $ 0xFF .&. (n `shiftR` s) | s <- reverse $ take width [0,8..]]
 
 encodeLength :: Int -> [Word8]
@@ -39,8 +38,8 @@ showAsHexOneString bs = "0x" ++ (concatMap showMin2Chars bs)
 
 showMin2Chars :: Word8 -> String
 showMin2Chars n =
-  let x = flip showHex "" n 
-      len = length x in 
+  let x = flip showHex "" n
+      len = length x in
     replicate (2 - len) '0' ++ x
 
 showAsHexString ::  [Word8] -> String

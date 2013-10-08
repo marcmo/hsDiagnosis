@@ -89,7 +89,6 @@ run async msg =
     pushOutMessage :: HSFZMessage -> Net ()
     pushOutMessage m = do
         h <- asks diagHandle
-        log ("sending --> " ++ show m)
         io $ hPutStr h (msg2ByteString m)
         io $ hFlush h -- Make sure that we send data immediately
 
@@ -123,9 +122,9 @@ listenForResponse m =
     receiveMsg buf = do
         h <- asks diagHandle
         timeout <- asks connectionTimeout
-        log ("wait for data with timeout:" ++ show timeout ++ " ms\n")
+        log ("wait for data with timeout:" ++ show timeout ++ " ms")
         dataAvailable <- waitForData timeout
-        log "\n"
+        log ""
         if not dataAvailable then io (print "no message received...") >> return mempty
           else do
             answereBytesRead <- io $ hGetBufNonBlocking h buf receiveBufSize

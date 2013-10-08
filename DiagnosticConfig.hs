@@ -9,7 +9,8 @@ module DiagnosticConfig
       standardDiagTimeout,
       currentIp,
       msgTunnelIp,
-      getIp
+      getIp,
+      debug_on
      )
 
 where
@@ -17,7 +18,7 @@ where
 import Com.DiagClient
 import Data.IORef
 
-debug_on = True
+debug_on = False
 
 conf = zgwConfig ip_A
 broadcastConf = femConfig "255.255.255.255"

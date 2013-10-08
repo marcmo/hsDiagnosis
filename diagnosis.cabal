@@ -2,12 +2,9 @@ Name:               diagnosis
 Version:            0.1.2
 Synopsis:           haskell implementation of diagnostic framework
 Description:        This package consists of 3 different programms:
-                    .
                     * an executable with an embedded Lua interpreter. This can be used to script the diagnostic
                      functionalities using Lua
-                    .
                     * an interpreter for existing diagnoser scripts
-                    .
                     * a standalone client program that can be used to send diagnosis messages
 License:            BSD3
 License-file:       LICENSE
@@ -19,6 +16,19 @@ Cabal-version:      >=1.6
 source-repository head
   type:             git
   location:         https://github.com/marcmo/hsDiagnosis
+library
+  HS-Source-Dirs: src
+  exposed-modules:
+    Diag,
+    Com,
+    Util
+  build-depends:
+    base >= 4 && < 5,
+    bytestring,
+    parsec >= 3.0,
+    network,
+    directory
+
 Executable luaexecuter
   Main-is:          LuaMain.hs
   Build-Depends:    bytestring,
@@ -41,7 +51,8 @@ Executable luaexecuter
                     containers,
                     configurator,
                     text,
-                    test-framework-quickcheck2
+                    test-framework-quickcheck2,
+                    certificate
   -- GHC-Options:        -threaded
 
 Executable diagexecuter

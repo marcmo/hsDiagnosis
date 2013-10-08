@@ -117,3 +117,8 @@ end
 
 task :default => [:clean, :build]
 
+desc "generate tag file"
+task :tags do
+  sh "find . | egrep '\.hs$' | xargs hothasktags > tags"
+end
+
