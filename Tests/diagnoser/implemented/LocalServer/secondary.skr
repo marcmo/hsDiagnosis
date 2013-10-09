@@ -1,1 +1,0 @@
-DIAG [Secondary Error Memory] SEND [22,20,00] EXPECT  [62,20,0,40,f,ff,f,80,40,2,f,80,40,27,f,80,40,2b,4c,80,41,88,e,80,41,a6,f,93,7,1f,f]  TIMEOUT [400]

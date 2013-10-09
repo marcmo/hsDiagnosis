@@ -1,2 +1,0 @@
-DIAG [ReadDataByIdentifier] SEND [22,a] EXPECT [62,a,b] TIMEOUT [c]
-

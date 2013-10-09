@@ -1,5 +1,0 @@
-WAIT [100]
-CALLSCRIPT simple_target.skr
-DIAG [abc] SEND [01,02,03] EXPECT [aa,bb,cc] TIMEOUT [2000] SOURCE [A0] TARGET [B0]
-
-

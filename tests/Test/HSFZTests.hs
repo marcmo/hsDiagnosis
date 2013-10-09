@@ -1,9 +1,9 @@
 {-# OPTIONS_GHC -fno-warn-orphans #-}
-module Tests.HSFZTests(hsfzTests)
+module Test.HSFZTests(tests)
 where
 
-import Test.Framework (testGroup)
-import Test.Framework.Providers.QuickCheck2 (testProperty)
+import Test.Tasty
+import Test.Tasty.QuickCheck as QC
 
 import Data.Word(Word8)
 import Data.List(delete)
@@ -14,12 +14,15 @@ import Com.HSFZMessage
 import Com.DiagMessage
 import Util.Encoding
 
+tests :: TestTree
+tests = testGroup "Tests" [hsfzTests]
+
 hsfzTests = testGroup "hsfz-msg Group" [
-                testProperty "serializing" prop_serializeDeserialize,
-                testProperty "deserializing" prop_deserializeserialize,
-                testProperty "serializing stream" prop_serializeDeserializeStream,
-                testProperty "bytes2msg2bytes" prop_bytes2Msg2bytes,
-                testProperty "diag2hsfz2diag" prop_diag2hsfz2diag
+                QC.testProperty "serializing" prop_serializeDeserialize,
+                QC.testProperty "deserializing" prop_deserializeserialize,
+                QC.testProperty "serializing stream" prop_serializeDeserializeStream,
+                QC.testProperty "bytes2msg2bytes" prop_bytes2Msg2bytes,
+                QC.testProperty "diag2hsfz2diag" prop_diag2hsfz2diag
             ]
 
 instance Arbitrary HSFZMessage where

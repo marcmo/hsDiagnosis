@@ -48,7 +48,7 @@ hexlist = between (char '[') (char ']') (hexnumber `sepBy` char ',')
 hexnumber = fst . head . readHex <$> (skipMany (string "0x") *> many1 hexDigit)
 
 main ::  IO ()
-main = withSocketsDo $ do 
+main = withSocketsDo $ do
   actions <- cmdArgs $ (modes [diagSend,dtc,logging,diagTest,luaTest]
                       &= summary "DiagnosisTool 0.3.0, (c) Oliver Mueller 2010-2011")
                       &= verbosity
@@ -66,9 +66,6 @@ execute (DiagTest ip s) = do
 --    print $ "running script " ++ s
 --    runTestScript s ip
   return ()
-execute (LuaTest s) = do
-    print $ "running lua script " ++ s
-    executeLuaScript s
 execute (Diagsend ip diagid m) =
   case parseTesterId diagid of
     (Right tid) ->  do  let config = mkConf tid ip
