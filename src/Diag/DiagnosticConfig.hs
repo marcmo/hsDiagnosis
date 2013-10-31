@@ -1,4 +1,4 @@
-module DiagnosticConfig
+module Diag.DiagnosticConfig
      (
       mkConf,
       conf,
@@ -6,7 +6,6 @@ module DiagnosticConfig
       femConfig,
       zgwConfig,
       messageTunnel,
-      standardDiagTimeout,
       currentIp,
       msgTunnelIp,
       getIp,
@@ -15,7 +14,8 @@ module DiagnosticConfig
 
 where
 
-import Com.DiagClient
+import Diag.Com.DiagClient
+import Diag.Config(standardDiagTimeout)
 import Data.IORef
 
 debug_on = False
@@ -33,7 +33,6 @@ messageTunnel = 0x10 :: Word8
 femConfig = mkConf fem
 zgwConfig = mkConf zgw
 
-standardDiagTimeout = 5000 :: Int -- ms
 mkConf :: Word8 -> String -> DiagConfig
 mkConf trg ip = MkDiagConfig ip 6801 0xf4 trg debug_on standardDiagTimeout
 

@@ -1,4 +1,4 @@
-module Util.Timer
+module Diag.Util.Timer
 
 where
 

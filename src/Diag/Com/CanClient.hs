@@ -1,11 +1,12 @@
-module Com.CanClient
+module Diag.Com.CanClient
 where
 
+import Diag.DiagnosticConfig
+import Diag.Com.DiagClient
+import Diag.Util.Encoding
+
 import Data.Bits
-import DiagnosticConfig
 import Data.Word
-import Com.DiagClient
-import Util.Encoding
 
 sampleCanMsg = CanMessage 100 10 0x555 [0xA,0xB,0xC]
 

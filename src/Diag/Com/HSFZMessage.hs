@@ -1,10 +1,10 @@
 {-# LANGUAGE DeriveDataTypeable #-}
-module Com.HSFZMessage
+module Diag.Com.HSFZMessage
 
 where
 
 import Data.Word(Word8)
-import Util.Encoding(showBinString,showAsHexString,showAsHex)
+import Diag.Util.Encoding(showBinString,showAsHexString,showAsHex)
 import qualified Data.ByteString as S
 import qualified Data.ByteString.Lazy as L
 import Data.Serialize.Get

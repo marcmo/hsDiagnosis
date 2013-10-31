@@ -1,8 +1,8 @@
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE OverloadedStrings #-}
-module Com.DiagClient
+module Diag.Com.DiagClient
     (
-      module Com.DiagMessage,
+      module Diag.Com.DiagMessage,
       sendBytes,
       sendDiagMsg,
       sendData,
@@ -15,10 +15,12 @@ module Com.DiagClient
     )
 where
 
-import Com.DiagMessage
+import Diag.Com.DiagMessage
+import Diag.Com.HSFZMessage
+import Diag.Com.DiagBase
+import Diag.Util.Encoding
+
 import Data.Monoid
-import Com.HSFZMessage
-import Com.DiagBase
 import Network(PortID(PortNumber),connectTo)
 import System.IO hiding (hPutStrLn,hPutStr)
 import Data.ByteString.Char8 hiding (putStrLn,putStr,length,head,tail,filter,any)
@@ -29,7 +31,6 @@ import Foreign.C.Types(CChar)
 import Control.Monad.Reader
 import Control.Exception
 import Text.Printf(printf)
-import Util.Encoding
 import Prelude hiding (catch,log)
 
 sendData ::  DiagConfig -> [Word8] -> IO [DiagnosisMessage]

@@ -1,7 +1,4 @@
--- from RealWorldHaskell:
--- file: ch09/RecursiveContents.hs
-
-module Util.RecursiveContents (getRecursiveContents) where
+module Diag.Util.RecursiveContents (getRecursiveContents) where
 
 import Control.Monad (forM)
 import System.Directory (doesDirectoryExist, getDirectoryContents)

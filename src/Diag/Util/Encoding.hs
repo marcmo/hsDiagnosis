@@ -1,4 +1,4 @@
-module Util.Encoding
+module Diag.Util.Encoding
 where
 
 import Data.Char

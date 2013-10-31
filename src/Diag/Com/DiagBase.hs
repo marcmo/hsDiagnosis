@@ -1,8 +1,9 @@
-module Com.DiagBase where
+module Diag.Com.DiagBase where
 
-import Com.DiagMessage
-import Com.HSFZMessage
+import Diag.Com.DiagMessage
+import Diag.Com.HSFZMessage
 import Diag.DiagnosisCodes
+
 import System.IO
 import Foreign(Word8)
 import Control.Monad.Reader

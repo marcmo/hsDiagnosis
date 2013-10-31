@@ -1,5 +1,5 @@
 {-# LANGUAGE DeriveDataTypeable #-}
-module Config
+module Diag.Config
     (
        defaultConfig
       ,defaultDiagConfig
@@ -19,12 +19,12 @@ module Config
       ,defaultPort
       ,defaultVerbose
       ,defaultTimeout
+      ,standardDiagTimeout
     )
 where
 
-import qualified Com.DiagClient as DC
+import qualified Diag.Com.DiagClient as DC
 
-import DiagnosticConfig
 import Data.Word
 import qualified Data.Configurator as C
 import qualified Data.Configurator.Types as CT
@@ -33,6 +33,8 @@ import Data.Text.Read
 import Numeric
 import Control.Applicative
 import System.Directory
+
+standardDiagTimeout = 5000 :: Int -- ms
 
 defaultConfig :: IO CT.Config
 defaultConfig = defaultConfigFile >>= configFromFile

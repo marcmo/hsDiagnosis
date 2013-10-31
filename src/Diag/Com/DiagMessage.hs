@@ -1,10 +1,10 @@
-module Com.DiagMessage
+module Diag.Com.DiagMessage
 
 where
 
 import Data.Word(Word8)
-import Util.Encoding
-import Com.HSFZMessage
+import Diag.Util.Encoding
+import Diag.Com.HSFZMessage
 
 data DiagnosisMessage = DiagnosisMessage {
   diagSource  :: Word8,
