@@ -8,16 +8,14 @@
     <link rel="stylesheet" type="text/css" href="client.css" />
   </head>
   <body>
-    <h1>hsDiagnoser WebInterface</h1>
-
     <h2>Send Diag Message</h2>
 
     <form id="message-form"  action="/sendDiagMsg" method="POST">
       <label for="src">Source: </label>
       <input id="src" name="src" type="text" size="1" value="10"/>
-      
+
       <label for="tgt">Target: </label>
-      <input id="tgt" name="tgt" type="text" size="1" value="40"> 
+      <input id="tgt" name="tgt" type="text" size="1" value="40">
 
       <label for="ip">IP: </label>
       <input id="ip" name="ip" type="text" size="12" value="127.0.0.1"/>
@@ -30,18 +28,6 @@
     </form>
 
     <div id="messages">
-    </div>
-
-    <h2>serial out</h2>
-
-    <div id="serial-path">
-      <label >Path of serial port: </label>
-      <label id="serial-port-path" name="serial-port-path" style="color:blue;padding-left:10px"> 
-	"/dev/ttyUSB0"  (default value, specify in config.cfg))
-      </label>
-    </div>
-
-    <div id="serial-out">
     </div>
 
   </body>
