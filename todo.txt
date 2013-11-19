@@ -1,0 +1,23 @@
+webinterface
+
+* Einstellen von: src/tgt
+* Eingabe (byte-weise): Diag Nachricht
+* senden
+* Anzeige von empfangenen Nachrichten
+* Anzeige von allem auf der seriellen Schnittstelle
+
+Architektur
+
+* webserver (snap): diagnosis framework laeuft hier
+* browser (javascript): fuers webinterface
+
+Allgemein:
+* einfachst moegliche Darstellung
+* javascript nur da wo unbedingt noetig (ajax fuer console/Nachrichten)
+
+Referenz:
+webserver:
+http://snapframework.com/docs/tutorials/snap-api
+http://learnmeahaskell.blogspot.de/2011/05/few-notes-on-learning-snap-framework.html
+serial interface:
+http://hackage.haskell.org/packages/archive/serialport/0.4.4/doc/html/System-Hardware-Serialport.html

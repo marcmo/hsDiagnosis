@@ -1,8 +1,9 @@
 {-# LANGUAGE OverloadedStrings #-}
+module Main where
 
-import WebInterface.SerialPort (serialSocket)
-import Com.DiagClient (DiagConfig(MkDiagConfig), DiagnosisMessage, Word8, diagPayload, sendData)
-import Config
+-- import Diag.Web.SerialPort (serialSocket)
+import Diag.Com.DiagClient (DiagConfig(MkDiagConfig), DiagnosisMessage, Word8, diagPayload, sendData)
+import Diag.Config
 
 import Snap.Core
 import Snap.Util.FileServe
@@ -18,17 +19,17 @@ import Data.List (intercalate)
 import Data.Char (toUpper)
 import qualified Data.ByteString.UTF8 as BS (ByteString, toString, fromString)
 import Numeric( showHex)
-import Util.Encoding
+import Diag.Util.Encoding
 -- import DiagnosticConfig
 
 
 configHandler :: Snap ()
 configHandler = do
-  ip   <- liftIO Config.defaultIp
+  ip   <- liftIO defaultIp
   liftIO $ print ("using ip: " ++ show ip)
-  src  <- liftIO Config.defaultSource
-  tgt  <- liftIO Config.defaultTarget
-  sPath <- liftIO $ valueToString $ Config.defaultConfig >>= lookupValue "serialPort"
+  src  <- liftIO Diag.Config.defaultSource
+  tgt  <- liftIO Diag.Config.defaultTarget
+  sPath <- liftIO $ valueToString $ Diag.Config.defaultConfig >>= lookupValue "serialPort"
   liftIO $ putStrLn $ showHex (fromJust src) ""
   writeBS $ BS.fromString $
   -- JSON:
@@ -51,20 +52,14 @@ securityAccessSendKey = 0x4
 
 createSignature _ = [0..signatureLength-1]
 
-checkValidCertificates c = sendZgw  [0xBF,0xFF,0xD5] c >>= showPayload
 diagMsgHandler :: Snap ()
 diagMsgHandler = do
-  let c =  MkDiagConfig "192.168.0.85" 6801 0xf4 0x10 True 5000
-  liftIO $ checkValidCertificates c
   params <- getPostParams
   let [ip, src, tgt, msg]  = map (lookupParam params) ["ip", "src", "tgt", "msg"]
       conf = MkDiagConfig ip 6801 (fromJust $ hexIt src) (fromJust $ hexIt tgt) True 5000
   liftIO $ print ("using conf: " ++ show conf)
-  let d = [0x10, 0x3]
-  response  <- liftIO $ sendData conf d
+  response  <- liftIO $ sendData conf (msgToWord8 msg)
   writeBS $  formatResponse response
-  -- response  <- liftIO $ sendData conf (msgToWord8 msg)
-  -- writeBS $  formatResponse response
 
   where
     lookupParam :: Params -> BS.ByteString -> String
@@ -82,18 +77,17 @@ diagMsgHandler = do
 
 site :: Snap ()
 site =
-  ifTop (serveFile "WebInterface/resources/client.html")  <|>
+  ifTop (serveFile "resources/client.html")  <|>
     route [("sendDiagMsg", diagMsgHandler),
            ("defaultConfig", configHandler),
            ("jquery-1.6.3.min.js", serveFile "WebInterface/resources/jquery-1.6.3.min.js"),
            ("client.js", serveFile "WebInterface/resources/client.js"),
-           ("client.css", serveFile "WebInterface/resources/client.css"),
-           ("initSerialPort", runWebSocketsSnap  serialSocket)]
+           ("client.css", serveFile "WebInterface/resources/client.css")]
+           -- ("initSerialPort", runWebSocketsSnap  serialSocket)]
 
 
 main :: IO ()
-main = do
-    quickHttpServe site
+main = quickHttpServe site
 
 
 

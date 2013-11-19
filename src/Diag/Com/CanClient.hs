@@ -1,8 +1,8 @@
 module Diag.Com.CanClient
 where
 
-import Diag.DiagnosticConfig
 import Diag.Com.DiagClient
+import Diag.Config(standardDiagTimeout)
 import Diag.Util.Encoding
 
 import Data.Bits
@@ -24,7 +24,7 @@ data CanMessage = CanMessage {
   messagePayload :: [Word8]
 } deriving (Show,Eq)
 
-msgTunnelConf = mkConf messageTunnel "10.40.39.53"
+msgTunnelConf = MkDiagConfig "10.40.39.53" 6801 0xf4 0x40 True standardDiagTimeout
 
 sendCanMsg :: CanBus -> CanMessage -> IO [DiagnosisMessage]
 sendCanMsg can (CanMessage _cycleTime count canId payload) = do

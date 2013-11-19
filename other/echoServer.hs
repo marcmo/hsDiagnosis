@@ -28,7 +28,7 @@ main = withSocketsDo $
 
       whenM a b = a >>= (flip when) b
       talk :: Socket -> IO ()
-      talk connSock = do 
+      talk connSock = do
              putStrLn "now we are talking..."
              whenM (sIsConnected connSock) (putStrLn "connected!")
              whenM (sIsReadable connSock) (putStrLn "readable!")
@@ -40,5 +40,5 @@ main = withSocketsDo $
               sendAll connSock $ replyTo msg
               putStrLn "sent back response, starting to listen again..."
               talk connSock
-      replyTo m = S.reverse m
+      replyTo = S.reverse
 
