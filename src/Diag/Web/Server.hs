@@ -3,6 +3,8 @@ module Main where
 
 import Diag.Com.DiagClient (DiagConfig(MkDiagConfig), DiagnosisMessage, Word8, diagPayload, sendData)
 import Diag.Config
+import Diag.Web.DataSerializer
+import Data.Aeson
 
 import Snap.Core
 import Snap.Util.FileServe
@@ -17,6 +19,7 @@ import Data.Map (lookup)
 import Data.List (intercalate)
 import Data.Char (toUpper)
 import qualified Data.ByteString.UTF8 as BS (ByteString, toString, fromString)
+import qualified Data.ByteString.Lazy as LBS
 import Numeric( showHex)
 import Diag.Util.Encoding
 
@@ -63,12 +66,25 @@ diagMsgHandler = do
                           map  (`showHex` "") $
                           diagPayload . head $ r
 
+
+channelHandler :: Snap ()
+channelHandler = do
+  let channels = ChannelList [Channel "can" 25, Channel "ethernet" 42]
+  writeBS $ LBS.toStrict $ encode channels
+
+connectedHandler :: Snap ()
+connectedHandler = writeBS "false"
+
 site :: Snap ()
-site =
-  ifTop (serveFile "resources/client.html")  <|>
-    route [("sendDiagMsg", diagMsgHandler),
-           ("defaultConfig", configHandler)] <|>
-    dir "static" (serveDirectory ".")
+site = do
+  readRequestBody 100 >>= liftIO . print
+  ifTop (serveFile "frontend/public/index.html")  <|>
+    route [("sendDiagMsg", diagMsgHandler)
+          ,("channels", channelHandler)
+          ,("is_connected", connectedHandler)
+          ,("", serveDirectory "frontend/public")
+          ,("defaultConfig", configHandler)] <|>
+    dir "static" (serveDirectory "frontend/public")
 
 
 main :: IO ()
