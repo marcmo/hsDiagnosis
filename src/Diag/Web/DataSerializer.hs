@@ -31,11 +31,21 @@ instance FromJSON Request where
         [("request", Object r)] -> Outgoing <$> r .: "source" <*> r .: "target" <*> r .: "payload"
         _                      -> fail "Rule: unexpected format"
 
-data ChannelRequest = ChannelRequest B.ByteString Request deriving (Show)
+data ActualRequest = ActualRequest {src :: String, tgt :: String, payload :: String} deriving (Show)
+instance ToJSON ActualRequest where
+    toJSON (ActualRequest a b c) = object ["source" .= a, "target" .= b, "request" .= c]
+instance FromJSON ActualRequest where
+    parseJSON (Object v) = ActualRequest <$> v .: "source" <*> v .: "target" <*> v .: "request"
+
+data ChannelRequest = ChannelRequest B.ByteString ActualRequest deriving (Show)
 instance ToJSON ChannelRequest where
     toJSON (ChannelRequest _id r) = object ["channel" .= _id, "request" .= r]
 instance FromJSON ChannelRequest where
     parseJSON (Object v) = ChannelRequest <$> v .: "channel" <*> v .: "request"
+testMe3 = decode s :: Maybe ChannelRequest
+  where cr = "{\"channel\":\"25\",\"request\":{\"source\":\"F0\",\"target\":\"10\",\"request\":\"01 23 20 32\"}}" :: B.ByteString
+        object = fromJust $ maybeResult $ parse json cr
+        s = encode object
 
 data ServerState = ServerState { _connected :: Bool, _output :: [Request]} deriving (Show)
 instance ToJSON ServerState where

@@ -14,13 +14,22 @@ import           Snap.Util.FileServe
 -- import Snap.Core
 import qualified Data.Aeson as JSON
 import qualified Data.ByteString.Lazy as LBS
+import qualified Data.ByteString.UTF8 as BS (ByteString, toString, fromString)
 import qualified Data.Map as M
+import qualified Data.Set as S
+import Numeric( showHex)
+import Data.List (intercalate)
+import Data.Text as T  (split, strip, pack, unpack)
+import Data.Char (toUpper)
+
 import Diag.Web.DataSerializer
--- import Snap.Http.Server
+import Diag.Com.DiagClient (DiagConfig(MkDiagConfig), DiagnosisMessage, Word8, diagPayload, sendData)
+import Diag.Util.Encoding
+import Diag.Config(hexIt)
 
 data App = App
     { _heist       :: Snaplet (Heist App)
-    , _channelId :: IORef B.ByteString
+    , _channelId :: IORef (S.Set B.ByteString)
     }
 
 makeLenses ''App
@@ -31,11 +40,12 @@ appInit = makeSnaplet "myapp" "My example application" Nothing $ do
               , ("/state", stateHandler)
               , ("/channels", channelHandler)
               , ("/connect", connectHandler)
+              , ("/disconnect", disconnectHandler)
               , ("/request", requestHandler)
               , ("", serveDirectory "frontend/public")
               ]
     wrapSite (<|> heistServe)
-    ref <- liftIO $ newIORef "fooCorp"
+    ref <- liftIO $ newIORef S.empty
     return $ App hs ref
 
 namePage :: Handler b v ()
@@ -52,47 +62,64 @@ readBodyJson2 = getPostParams >>= return . fromJust . JSON.decode . LBS.fromStri
 stateHandler :: Handler App App ()
 stateHandler = method GET getter <|> method POST setter
   where
-    getter = do
-        liftIO $ putStrLn "was stateHandler getter"
-        writeBS "nyi"
+    getter = writeBS "nyi"
     setter = do
-        ps <- getPostParams
-        liftIO $ putStrLn $ "postParameters were:" ++ show ps
         con@(CR requestedChannel) <- readBodyJson :: Handler App App ConnectRequest
         liftIO $ putStrLn $ "requestedChannel was:" ++ show con
         idRef <- gets _channelId
-        channelId <- liftIO $ readIORef idRef
-        let ss = ServerState (channelId == requestedChannel) []
+        registeredChannels <- liftIO $ readIORef idRef
+        let ss = ServerState (S.member requestedChannel registeredChannels) []
         writeBS $ LBS.toStrict $ JSON.encode ss
 
 connectHandler :: Handler App App ()
 connectHandler = method GET getter <|> method POST setter
   where
-    getter = do
-        liftIO $ putStrLn "was stateHandler getter"
-        writeBS "nyi"
+    getter = writeBS "nyi"
     setter = do
         con@(CR requestedChannel) <- readBodyJson :: Handler App App ConnectRequest
         liftIO $ putStrLn $ "requestedChannel was:" ++ show con
-        nameRef <- gets _channelId
-        liftIO $ maybe (return ()) (writeIORef nameRef) (Just requestedChannel)
-        getter
+        idRef <- gets _channelId
+        liftIO $ modifyIORef' idRef (\x->S.insert requestedChannel x)
+
+disconnectHandler :: Handler App App ()
+disconnectHandler = method GET getter <|> method POST setter
+  where
+    getter = writeBS "nyi"
+    setter = do
+        con@(CR disconnectedChannel) <- readBodyJson :: Handler App App ConnectRequest
+        liftIO $ putStrLn $ "disconnect channel:" ++ show con
+        idRef <- gets _channelId
+        liftIO $ modifyIORef' idRef (\x->S.delete disconnectedChannel x)
 
 requestHandler :: Handler App App ()
 requestHandler = method GET getter <|> method POST setter
   where
-    getter = do
-        nameRef <- gets _channelId
-        name <- liftIO $ readIORef nameRef
-        writeBS name
+    getter = writeBS "GET for requestHandler not implemented"
     setter = do
+        ps <- getPostParams
+        liftIO $ putStrLn $ "requestHandler: postParameters were:" ++ show ((LBS.fromStrict . head . M.keys) ps)
         con@(ChannelRequest _id _request) <- readBodyJson2 :: Handler App App ChannelRequest
         liftIO $ putStrLn $ "requested for Channel :" ++ show _id ++ ", req:" ++ show _request
         idRef <- gets _channelId
-        channelId <- liftIO $ readIORef idRef
-        if (channelId == _id)
-          then liftIO $ putStrLn "Sending request"
+        registeredChannels <- liftIO $ readIORef idRef
+        if (S.member _id registeredChannels)
+          then do
+              let _ip = "localhost"
+              liftIO $ putStrLn $ "Sending request to " ++ _ip
+              let conf = MkDiagConfig _ip 6801 (fromJust $ hexIt (src _request)) (fromJust $ hexIt (tgt _request)) True 5000
+              response  <- liftIO $ sendData conf (msgToWord8 (payload _request))
+              writeBS $  formatResponse response
           else liftIO $ putStrLn "channel id not connected!"
+
+msgToWord8 :: String -> [Word8]
+msgToWord8 msg = map (fromJust . hexIt . T.unpack . T.strip) $
+                    T.split (\x -> ',' == x) $ T.pack msg
+formatResponse :: [DiagnosisMessage] -> BS.ByteString
+formatResponse r = BS.fromString $
+                      map toUpper $
+                      intercalate ", " $
+                      map  (`showHex` "") $
+                      diagPayload . head $ r
 
 channelHandler :: Handler App App ()
 channelHandler = do
