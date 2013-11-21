@@ -31,17 +31,23 @@ appInit = makeSnaplet "myapp" "My example application" Nothing $ do
               , ("/state", stateHandler)
               , ("/channels", channelHandler)
               , ("/connect", connectHandler)
+              , ("/request", requestHandler)
               , ("", serveDirectory "frontend/public")
               ]
     wrapSite (<|> heistServe)
     ref <- liftIO $ newIORef "fooCorp"
     return $ App hs ref
+
 namePage :: Handler b v ()
 namePage = do
     mname <- getSnapletName
     writeText $ fromMaybe "This shouldn't happen" mname
 
+readBodyJson ::  Handler App App ConnectRequest
 readBodyJson = getPostParams >>= return . fromJust . JSON.decode . LBS.fromStrict . head . M.keys
+
+readBodyJson2 ::  Handler App App ChannelRequest
+readBodyJson2 = getPostParams >>= return . fromJust . JSON.decode . LBS.fromStrict . head . M.keys
 
 stateHandler :: Handler App App ()
 stateHandler = method GET getter <|> method POST setter
@@ -63,18 +69,30 @@ connectHandler :: Handler App App ()
 connectHandler = method GET getter <|> method POST setter
   where
     getter = do
-        liftIO $ putStrLn "was connectHandler getter"
-        nameRef <- gets _channelId
-        name <- liftIO $ readIORef nameRef
-        writeBS name
+        liftIO $ putStrLn "was stateHandler getter"
+        writeBS "nyi"
     setter = do
-        ps <- getPostParams
-        liftIO $ putStrLn $ "postParameters were:" ++ show ps
         con@(CR requestedChannel) <- readBodyJson :: Handler App App ConnectRequest
         liftIO $ putStrLn $ "requestedChannel was:" ++ show con
         nameRef <- gets _channelId
         liftIO $ maybe (return ()) (writeIORef nameRef) (Just requestedChannel)
         getter
+
+requestHandler :: Handler App App ()
+requestHandler = method GET getter <|> method POST setter
+  where
+    getter = do
+        nameRef <- gets _channelId
+        name <- liftIO $ readIORef nameRef
+        writeBS name
+    setter = do
+        con@(ChannelRequest _id _request) <- readBodyJson2 :: Handler App App ChannelRequest
+        liftIO $ putStrLn $ "requested for Channel :" ++ show _id ++ ", req:" ++ show _request
+        idRef <- gets _channelId
+        channelId <- liftIO $ readIORef idRef
+        if (channelId == _id)
+          then liftIO $ putStrLn "Sending request"
+          else liftIO $ putStrLn "channel id not connected!"
 
 channelHandler :: Handler App App ()
 channelHandler = do

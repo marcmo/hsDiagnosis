@@ -31,20 +31,17 @@ instance FromJSON Request where
         [("request", Object r)] -> Outgoing <$> r .: "source" <*> r .: "target" <*> r .: "payload"
         _                      -> fail "Rule: unexpected format"
 
+data ChannelRequest = ChannelRequest B.ByteString Request deriving (Show)
+instance ToJSON ChannelRequest where
+    toJSON (ChannelRequest _id r) = object ["channel" .= _id, "request" .= r]
+instance FromJSON ChannelRequest where
+    parseJSON (Object v) = ChannelRequest <$> v .: "channel" <*> v .: "request"
+
 data ServerState = ServerState { _connected :: Bool, _output :: [Request]} deriving (Show)
 instance ToJSON ServerState where
      toJSON (ServerState c o) = object ["connected" .= c, "output" .= o]
 instance FromJSON ServerState where
     parseJSON (Object v) = ServerState <$> v .: "connected" <*> v .: "output"
-    -- parseJSON (Array a) = D2 <$> mapM parseJSON (V.toList a)
-  -- { 
-  --   :connected => <true|false>,
-  --   :output => [
-  --     {:request => { :source => <source id>, :target => <target id>, :response => <data> } },
-  --     {:response => { :source => <source id>, :target => <target id>, :response => <data> } },
-  --     ...
-  --   ]
-  -- }
 tt = "{\"output\":[{\"response\":{\"response\":\"abc\",\"source\":\"a\",\"target\":\"b\"}},{\"request\":{\"response\":\"ABC\",\"source\":\"A\",\"target\":\"B\"}}],\"connected\":true}"
 testMe2 = fromJust $ maybeResult $ parse json testState
 
