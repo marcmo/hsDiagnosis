@@ -113,11 +113,11 @@ requestHandler = method GET getter <|> method POST setter
 
 msgToWord8 :: String -> [Word8]
 msgToWord8 msg = map (fromJust . hexIt . T.unpack . T.strip) $
-                    T.split (\x -> ',' == x) $ T.pack msg
+                    T.split (\x -> ' ' == x) $ T.pack msg
 formatResponse :: [DiagnosisMessage] -> BS.ByteString
 formatResponse r = BS.fromString $
                       map toUpper $
-                      intercalate ", " $
+                      unwords $
                       map  (`showHex` "") $
                       diagPayload . head $ r
 
