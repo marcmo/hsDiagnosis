@@ -9,6 +9,12 @@ import qualified Data.Vector as V
 import qualified Data.Aeson.Types as T
 import qualified Data.ByteString.Lazy.Char8 as BL
 
+data ConnectRequest = CR String deriving (Show)
+instance ToJSON ConnectRequest where
+     toJSON (CR n) = object ["channel" .= n]
+instance FromJSON ConnectRequest where
+    parseJSON (Object v) = CR <$> v .: "channel"
+
 data Channel = Channel { _name :: String, _id :: Int } deriving (Show)
 instance ToJSON Channel where
      toJSON (Channel n i) = object ["name" .= n, "id" .= i]
@@ -25,16 +31,17 @@ instance FromJSON ChannelList where
 instance ToJSON ChannelList where
   toJSON (ChannelList ps) = Array $ V.fromList [toJSON x | x <- ps]
 
-testme = maybe (print "parse not successfull")
+testme ::  IO (Maybe ConnectRequest)
+testme = maybe (print "parse not successfull" >> return Nothing)
           (\v-> do
-              let pd :: ChannelList
-                  pd = case fromJSON v of
+              let pd = case fromJSON v of
                           Success a -> a
                           Error s   -> error s
               print pd
-              putStrLn $ "Encoded back: " ++ BL.unpack (encode pd))
+              putStrLn $ "Encoded back: " ++ BL.unpack (encode pd)
+              return (Just pd))
           (maybeResult $ parse json testJson)
 
-testJson = "[{\"name\":\"Joe\",\"id\":12},{\"name\":\"Hoe\",\"id\":13}]"
-
+-- testJson = "[{\"name\":\"Joe\",\"id\":12},{\"name\":\"Hoe\",\"id\":13}]"
+testJson = "{\"channel\":\"25\"}"
 

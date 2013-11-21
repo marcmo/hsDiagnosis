@@ -4,18 +4,20 @@ module Main where
 import Diag.Com.DiagClient (DiagConfig(MkDiagConfig), DiagnosisMessage, Word8, diagPayload, sendData)
 import Diag.Config
 import Diag.Web.DataSerializer
-import Data.Aeson
+import Diag.Web.SessionSupport
 
 import Snap.Core
+import Snap.Extras.JSON
 import Snap.Util.FileServe
 import Snap.Http.Server
 import Network.WebSockets.Snap (runWebSocketsSnap)
+import qualified Data.Aeson as JSON
 
 import Control.Applicative ((<|>))
 import Control.Monad.IO.Class (liftIO)
 import Data.Text as T  (split, strip, pack, unpack)
 import Data.Maybe (fromJust)
-import Data.Map (lookup)
+import qualified Data.Map as M
 import Data.List (intercalate)
 import Data.Char (toUpper)
 import qualified Data.ByteString.UTF8 as BS (ByteString, toString, fromString)
@@ -53,9 +55,6 @@ diagMsgHandler = do
   writeBS $  formatResponse response
 
   where
-    lookupParam :: Params -> BS.ByteString -> String
-    lookupParam params name = BS.toString . head . fromJust $
-                                 Data.Map.lookup name params
     msgToWord8 :: String -> [Word8]
     msgToWord8 msg = map (fromJust . hexIt . T.unpack . T.strip) $
                          T.split (\x -> ',' == x) $ T.pack msg
@@ -66,14 +65,29 @@ diagMsgHandler = do
                           map  (`showHex` "") $
                           diagPayload . head $ r
 
+readBodyJson = getPostParams >>= return . fromJust . JSON.decode . LBS.fromStrict . head . M.keys
+lookupParam :: Params -> BS.ByteString -> String
+lookupParam params name = BS.toString . head . fromJust $ M.lookup name params
 
 channelHandler :: Snap ()
 channelHandler = do
   let channels = ChannelList [Channel "can" 25, Channel "ethernet" 42]
-  writeBS $ LBS.toStrict $ encode channels
+  writeBS $ LBS.toStrict $ JSON.encode channels
 
-connectedHandler :: Snap ()
-connectedHandler = writeBS "false"
+connectHandler ::  Snap ()
+connectHandler = do
+  params <- getPostParams
+  con@(CR requestedChannel) <- readBodyJson :: Snap ConnectRequest
+  liftIO $ putStrLn $ "inside connectHandler, params:" ++ show con
+  liftIO $ putStrLn $ "requestedChannel:" ++ requestedChannel
+  liftIO $ do
+    env <- sessionEnv
+    printEnv env
+    defineVar env "connectedChannel" requestedChannel
+    printEnv env
+    env2 <- sessionEnv
+    printEnv env2
+  return ()
 
 site :: Snap ()
 site = do
@@ -81,7 +95,7 @@ site = do
   ifTop (serveFile "frontend/public/index.html")  <|>
     route [("sendDiagMsg", diagMsgHandler)
           ,("channels", channelHandler)
-          ,("is_connected", connectedHandler)
+          ,("connect", connectHandler)
           ,("", serveDirectory "frontend/public")
           ,("defaultConfig", configHandler)] <|>
     dir "static" (serveDirectory "frontend/public")

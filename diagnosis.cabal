@@ -47,6 +47,7 @@ library
     websockets,
     snap-core,
     snap-server,
+    snap-extras,
     serialport,
     utf8-string
 test-suite tests
