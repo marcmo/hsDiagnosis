@@ -31,7 +31,7 @@ import Foreign.C.Types(CChar)
 import Control.Monad.Reader
 import Control.Exception
 import Text.Printf(printf)
-import Prelude hiding (log)
+import Prelude hiding (log,catch)
 
 sendData ::  DiagConfig -> [Word8] -> IO [DiagnosisMessage]
 sendData c xs = do
