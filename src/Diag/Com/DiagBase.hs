@@ -7,7 +7,7 @@ import Diag.DiagnosisCodes
 import System.IO
 import Foreign(Word8)
 import Control.Monad.Reader
-import Prelude hiding (catch,log)
+import Prelude hiding (log)
 
 receiveBufSize = 4096 :: Int
 pollingMs = 100 :: Int

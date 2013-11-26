@@ -5,10 +5,9 @@ import Control.Applicative((<$>),(<*>))
 import Control.Monad(mzero)
 import Data.Attoparsec(parse,maybeResult)
 import Data.Aeson
-import Data.Maybe(isJust,fromJust)
+import Data.Maybe(fromJust)
 import qualified Data.HashMap.Strict as HM
 import qualified Data.Vector as V
-import qualified Data.Aeson.Types as T
 import qualified Data.ByteString.Lazy.Char8 as BL
 import qualified Data.ByteString.Char8 as B
 
@@ -17,6 +16,7 @@ instance ToJSON ConnectRequest where
      toJSON (CR n) = object ["channel" .= n]
 instance FromJSON ConnectRequest where
     parseJSON (Object v) = CR <$> v .: "channel"
+    parseJSON _ = mzero
 
 data Request = Incoming String String String
              | Outgoing String String String deriving (Show,Eq)
@@ -36,22 +36,25 @@ instance ToJSON ActualRequest where
     toJSON (ActualRequest a b c) = object ["source" .= a, "target" .= b, "request" .= c]
 instance FromJSON ActualRequest where
     parseJSON (Object v) = ActualRequest <$> v .: "source" <*> v .: "target" <*> v .: "request"
+    parseJSON _ = mzero
 
 data ChannelRequest = ChannelRequest B.ByteString ActualRequest deriving (Show)
 instance ToJSON ChannelRequest where
     toJSON (ChannelRequest _id r) = object ["channel" .= _id, "request" .= r]
 instance FromJSON ChannelRequest where
     parseJSON (Object v) = ChannelRequest <$> v .: "channel" <*> v .: "request"
+    parseJSON _ = mzero
 testMe3 = decode s :: Maybe ChannelRequest
   where cr = "{\"channel\":\"25\",\"request\":{\"source\":\"F0\",\"target\":\"10\",\"request\":\"01 23 20 32\"}}" :: B.ByteString
-        object = fromJust $ maybeResult $ parse json cr
-        s = encode object
+        _object = fromJust $ maybeResult $ parse json cr
+        s = encode _object
 
 data ServerState = ServerState { _connected :: Bool, _output :: [Request]} deriving (Show)
 instance ToJSON ServerState where
      toJSON (ServerState c o) = object ["connected" .= c, "output" .= o]
 instance FromJSON ServerState where
     parseJSON (Object v) = ServerState <$> v .: "connected" <*> v .: "output"
+    parseJSON _ = mzero
 tt = "{\"output\":[{\"response\":{\"response\":\"abc\",\"source\":\"a\",\"target\":\"b\"}},{\"request\":{\"response\":\"ABC\",\"source\":\"A\",\"target\":\"B\"}}],\"connected\":true}"
 testMe2 = fromJust $ maybeResult $ parse json testState
 

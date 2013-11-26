@@ -122,3 +122,8 @@ task :tags do
   sh "find . | egrep '\.hs$' | xargs hothasktags > tags"
 end
 
+desc "run webserver on port 8899 using cabal"
+task :run do
+  sh "cabal run -- \"-p 8899\""
+end
+

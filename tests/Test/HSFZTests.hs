@@ -10,9 +10,9 @@ import Data.List(delete)
 import Control.Applicative((<$>))
 import qualified Data.ByteString as S
 import Test.QuickCheck hiding ((.&.))
-import Com.HSFZMessage
-import Com.DiagMessage
-import Util.Encoding
+import Diag.Com.HSFZMessage
+import Diag.Com.DiagMessage
+import Diag.Util.Encoding
 
 tests :: TestTree
 tests = testGroup "Tests" [hsfzTests]
@@ -84,16 +84,6 @@ instance Arbitrary DiagnosisMessage where
 
 instance Arbitrary ControlBit where
   arbitrary = oneof [return DataBit,return AckBit]
-
--- extractOneChar :: Gen [a] -> Gen a
--- extractOneChar values = do
---   xs <- values
---   elements xs
-
--- combination :: [a] -> Gen [a]
--- combination xs = do
---   count <- choose(1,10) :: Gen Int
---   sequence [ elements xs | _ <- [1..count]]
 
 permutation :: Eq a => [a] -> Gen [a]
 permutation initial = inner initial []

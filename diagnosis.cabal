@@ -10,11 +10,13 @@ Author:             oliver mueller
 Maintainer:         oliver.mueller@gmail.com
 Category:           Development
 Build-type:         Simple
-Cabal-version:      >=1.6
+Cabal-version:      >=1.10
 source-repository head
   type:             git
   location:         https://github.com/marcmo/hsDiagnosis
-library
+
+Library
+  Default-Language: Haskell2010
   HS-Source-Dirs: src
   exposed-modules:
     Diag.Com.CanClient,
@@ -49,10 +51,11 @@ library
     lens,
     snap,
     snap-core,
-    snap-server,
     serialport,
     utf8-string
-test-suite tests
+
+Test-Suite tests
+  Default-Language: Haskell2010
   type:           exitcode-stdio-1.0
   hs-source-dirs: tests src
   main-is:        Tests.hs
@@ -64,21 +67,35 @@ test-suite tests
     HUnit >= 1.2,
     QuickCheck >= 2.4,
     base,
+    bytestring,
+    cereal,
     tasty >= 0.3,
     tasty-quickcheck >= 0.3
 
-executable diagserver
+Executable diagserver
+  Default-Language: Haskell2010
   hs-source-dirs:      src
   main-is: Diag/Web/Server.hs
   build-depends:
     base >=4 && <5,
     containers,
+    mtl,
+    bytestring,
+    network,
+    directory,
+    cereal,
+    text,
+    configurator,
     transformers,
+    aeson,
+    unordered-containers,
+    vector,
+    attoparsec,
+    lens,
+    snap,
+    snap-core,
     websockets-snap,
     websockets,
-    snap-core,
-    snap-server,
     serialport,
     utf8-string
-  default-language:    Haskell2010
 
